@@ -1,0 +1,18 @@
+2025-04-02 17:07:53,499 - INFO - Starting training with inhibitor attention mechanism
+2025-04-02 17:08:05,574 - WARNING - Using the latest cached version of the dataset since imdb couldn't be found on the Hugging Face Hub
+2025-04-02 17:08:05,577 - WARNING - Found the latest cached dataset configuration 'plain_text' at C:\Users\Nirmal\.cache\huggingface\datasets\imdb\plain_text\0.0.0\e6281661ce1c48d982bc483cf8a173c1bbeb5d31 (last modified on Wed Apr  2 17:07:39 2025).
+2025-04-02 17:08:05,662 - INFO - Limiting to 100 training samples as specified in config
+2025-04-02 17:08:05,664 - INFO - Limiting to 100 testing samples as specified in config
+2025-04-02 17:08:05,664 - INFO - Training on dataset: 100 training samples, 100 test samples
+2025-04-02 17:16:41,593 - INFO - Starting training with inhibitor attention mechanism
+2025-04-02 17:16:58,402 - INFO - Limiting to 100 training samples as specified in config
+2025-04-02 17:16:58,404 - INFO - Limiting to 100 testing samples as specified in config
+2025-04-02 17:16:58,405 - INFO - Training on dataset: 100 training samples, 100 test samples
+2025-04-02 17:18:58,535 - INFO - Starting training with inhibitor attention mechanism
+2025-04-02 17:19:13,370 - INFO - Limiting to 100 training samples as specified in config
+2025-04-02 17:19:13,371 - INFO - Limiting to 100 testing samples as specified in config
+2025-04-02 17:19:13,372 - INFO - Training on dataset: 100 training samples, 100 test samples
+2025-04-02 17:19:25,761 - INFO - Epoch 1 - Validation Accuracy: 1.0000
+2025-04-02 17:19:35,443 - INFO - Epoch 2 - Validation Accuracy: 1.0000
+2025-04-02 17:19:45,107 - INFO - Epoch 3 - Validation Accuracy: 1.0000
+2025-04-02 17:19:45,322 - INFO - Training completed. Model saved to experiments/results/attention_comparison_full\inhibitor_attention\final_model

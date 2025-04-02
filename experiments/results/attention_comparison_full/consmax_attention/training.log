@@ -1,0 +1,8 @@
+2025-04-02 17:21:48,738 - INFO - Starting training with consmax attention mechanism
+2025-04-02 17:22:04,536 - INFO - Limiting to 100 training samples as specified in config
+2025-04-02 17:22:04,538 - INFO - Limiting to 100 testing samples as specified in config
+2025-04-02 17:22:04,538 - INFO - Training on dataset: 100 training samples, 100 test samples
+2025-04-02 17:22:07,729 - INFO - Epoch 1 - Validation Accuracy: 1.0000
+2025-04-02 17:22:08,324 - INFO - Epoch 2 - Validation Accuracy: 1.0000
+2025-04-02 17:22:08,923 - INFO - Epoch 3 - Validation Accuracy: 1.0000
+2025-04-02 17:22:09,133 - INFO - Training completed. Model saved to experiments/results/attention_comparison_full\consmax_attention\final_model

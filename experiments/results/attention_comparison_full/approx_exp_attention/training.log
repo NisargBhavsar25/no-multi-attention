@@ -1,0 +1,8 @@
+2025-04-02 17:29:32,204 - INFO - Starting training with approx_exp attention mechanism
+2025-04-02 17:30:00,686 - INFO - Limiting to 100 training samples as specified in config
+2025-04-02 17:30:00,688 - INFO - Limiting to 100 testing samples as specified in config
+2025-04-02 17:30:00,688 - INFO - Training on dataset: 100 training samples, 100 test samples
+2025-04-02 17:30:03,941 - INFO - Epoch 1 - Validation Accuracy: 1.0000
+2025-04-02 17:30:04,530 - INFO - Epoch 2 - Validation Accuracy: 1.0000
+2025-04-02 17:30:05,128 - INFO - Epoch 3 - Validation Accuracy: 1.0000
+2025-04-02 17:30:05,326 - INFO - Training completed. Model saved to experiments/results/attention_comparison_full\approx_exp_attention\final_model

@@ -24,8 +24,19 @@ def load_data(config):
     # Load IMDB dataset
     dataset = load_dataset("imdb")
     
+    # Check if we should limit the number of training samples
+    num_train_samples = config['dataset'].get('num_train_samples', -1)
+    if num_train_samples > 0 and num_train_samples < len(dataset['train']):
+        dataset['train'] = dataset['train'].select(range(num_train_samples))
+        logging.info(f"Limiting to {num_train_samples} training samples as specified in config")
+
+    num_test_samples = config['dataset'].get('num_test_samples', -1)
+    if num_test_samples > 0 and num_test_samples < len(dataset['test']):
+        dataset['test'] = dataset['test'].select(range(num_test_samples))
+        logging.info(f"Limiting to {num_test_samples} testing samples as specified in config")
+    
     # Log the dataset size
-    logging.info(f"Training on full dataset: {len(dataset['train'])} training samples, {len(dataset['test'])} test samples")
+    logging.info(f"Training on dataset: {len(dataset['train'])} training samples, {len(dataset['test'])} test samples")
     
     # Load tokenizer
     tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
@@ -145,7 +156,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--config', type=str, required=True, help='Path to config file')
     parser.add_argument('--attention_type', type=str, default='standard', 
-                        choices=['standard', 'inhibitor', 'quadratic_inhibitor'], 
+                        choices=['standard', 'inhibitor', 'quadratic_inhibitor', 'consmax', 'approx_exp'], 
                         help='Type of attention mechanism to use')
     args = parser.parse_args()
     

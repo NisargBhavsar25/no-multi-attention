@@ -5,6 +5,8 @@ from models.base_model import BaseTransformerModel
 from models.attention.standard_attention import StandardAttention
 from models.attention.inhibitor_attention import InhibitorAttention
 from models.attention.quadratic_inhibitor_attention import QuadraticInhibitorAttention
+from models.attention.consmax_attention import ConsMaxAttention
+from models.attention.approx_exp_attention import ApproxExpAttention
 
 class BertEmbeddings(nn.Module):
     """
@@ -56,6 +58,10 @@ class BertLayer(nn.Module):
             self.attention = InhibitorAttention(config)
         elif attention_type == "quadratic_inhibitor":
             self.attention = QuadraticInhibitorAttention(config)
+        elif attention_type == "consmax":
+            self.attention = ConsMaxAttention(config)
+        elif attention_type == "approx_exp":
+            self.attention = ApproxExpAttention(config)
         else:
             raise ValueError(f"Unsupported attention type: {attention_type}")
         

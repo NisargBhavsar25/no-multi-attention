@@ -27,6 +27,66 @@ Where:
 - γ: Scaling parameter
 - ^+: ReLU function
 
+### 3. Quadratic Inhibitor Attention
+
+An extension of the Inhibitor Attention that uses quadratic distance instead of Manhattan distance:
+
+```
+Z_ij = ∑_k (1/γ) (Q_ik - K_jk)²
+H_ik = ∑_j (V_jk - Z_ij)^+
+```
+
+Where:
+- Z_ij: Attention scores based on quadratic distance
+- H_ik: Output after applying inhibition (ReLU)
+- γ: Scaling parameter
+- ^+: ReLU function
+
+### 4. ConsMax Attention
+
+An alternative attention mechanism that replaces the softmax function with ConsMax activation:
+
+```
+ConSmax(S_i) = (e^(S_i-β))/γ = C × e^S_i, where C = -e^β/γ
+```
+
+Where:
+- S_i: Attention score for position i
+- β: Shift parameter (learnable)
+- γ: Scale parameter (learnable)
+- C: Constant factor during inference
+
+Unlike softmax, ConsMax:
+- Does not normalize the probability vector to sum to 1
+- Includes learnable parameters β and γ
+- Maintains β and γ as independent parameters during training to mitigate overflow
+- Can merge parameters into a single constant during inference
+
+### 5. ApproxExp Attention
+
+An extension of ConsMax that replaces the exponential function with an algebraic approximation:
+
+```
+ApproxExp(S_i) = ((1 + (S_i-β)/(2^r))^(2^r))/γ, x ≤ 0, with r = 7
+```
+
+Where:
+- S_i: Attention score for position i
+- β: Shift parameter (learnable)
+- γ: Scale parameter (learnable)
+- r: Fixed parameter (r=7)
+
+The exponential approximation used is:
+```
+EXP(x) ≈ (1 + x/2^r)^(2^r), x ≤ 0
+```
+
+Benefits of this approach:
+- Avoids expensive exponential operations
+- May improve computational efficiency
+- Shares the same overall structure as ConsMax but with a different activation function
+- Still includes learnable parameters β and γ
+
 ## Running the Experiment
 
 To run the experiment:
@@ -56,6 +116,9 @@ You can modify `attention_comparison_config.yaml` to:
 - Adjust training settings
 - Configure evaluation metrics
 - Add more attention mechanisms
+- Control dataset size:
+  - `num_train_samples`: Limit the number of training samples (-1 for all samples)
+  - `num_test_samples`: Limit the number of test samples (-1 for all samples)
 
 ## Output Location
 

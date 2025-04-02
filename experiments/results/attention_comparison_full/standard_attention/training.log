@@ -1,2 +1,33 @@
 2025-04-02 16:16:44,321 - INFO - Starting training with standard attention mechanism
 2025-04-02 16:17:03,422 - INFO - Training on full dataset: 25000 training samples, 25000 test samples
+2025-04-02 17:02:01,243 - INFO - Starting training with standard attention mechanism
+2025-04-02 17:02:13,331 - WARNING - Using the latest cached version of the dataset since imdb couldn't be found on the Hugging Face Hub
+2025-04-02 17:02:13,335 - WARNING - Found the latest cached dataset configuration 'plain_text' at C:\Users\Nirmal\.cache\huggingface\datasets\imdb\plain_text\0.0.0\e6281661ce1c48d982bc483cf8a173c1bbeb5d31 (last modified on Wed Apr  2 16:17:20 2025).
+2025-04-02 17:02:13,489 - INFO - Limiting to 100 training samples as specified in config
+2025-04-02 17:02:13,491 - INFO - Training on dataset: 100 training samples, 25000 test samples
+2025-04-02 17:06:52,438 - INFO - Starting training with standard attention mechanism
+2025-04-02 17:07:04,512 - WARNING - Using the latest cached version of the dataset since imdb couldn't be found on the Hugging Face Hub
+2025-04-02 17:07:04,513 - WARNING - Found the latest cached dataset configuration 'plain_text' at C:\Users\Nirmal\.cache\huggingface\datasets\imdb\plain_text\0.0.0\e6281661ce1c48d982bc483cf8a173c1bbeb5d31 (last modified on Wed Apr  2 17:02:21 2025).
+2025-04-02 17:07:04,603 - INFO - Limiting to 100 training samples as specified in config
+2025-04-02 17:07:04,605 - INFO - Limiting to 100 testing samples as specified in config
+2025-04-02 17:07:04,605 - INFO - Training on dataset: 100 training samples, 100 test samples
+2025-04-02 17:07:14,440 - INFO - Epoch 1 - Validation Accuracy: 1.0000
+2025-04-02 17:07:21,356 - INFO - Epoch 2 - Validation Accuracy: 1.0000
+2025-04-02 17:07:28,312 - INFO - Epoch 3 - Validation Accuracy: 1.0000
+2025-04-02 17:07:29,095 - INFO - Training completed. Model saved to experiments/results/attention_comparison_full\standard_attention\final_model
+2025-04-02 17:15:41,992 - INFO - Starting training with standard attention mechanism
+2025-04-02 17:16:00,056 - INFO - Limiting to 100 training samples as specified in config
+2025-04-02 17:16:00,059 - INFO - Limiting to 100 testing samples as specified in config
+2025-04-02 17:16:00,060 - INFO - Training on dataset: 100 training samples, 100 test samples
+2025-04-02 17:16:03,895 - INFO - Epoch 1 - Validation Accuracy: 1.0000
+2025-04-02 17:16:04,960 - INFO - Epoch 2 - Validation Accuracy: 1.0000
+2025-04-02 17:16:06,026 - INFO - Epoch 3 - Validation Accuracy: 1.0000
+2025-04-02 17:16:06,241 - INFO - Training completed. Model saved to experiments/results/attention_comparison_full\standard_attention\final_model
+2025-04-02 17:18:00,179 - INFO - Starting training with standard attention mechanism
+2025-04-02 17:18:17,747 - INFO - Limiting to 100 training samples as specified in config
+2025-04-02 17:18:17,749 - INFO - Limiting to 100 testing samples as specified in config
+2025-04-02 17:18:17,749 - INFO - Training on dataset: 100 training samples, 100 test samples
+2025-04-02 17:18:20,989 - INFO - Epoch 1 - Validation Accuracy: 1.0000
+2025-04-02 17:18:21,529 - INFO - Epoch 2 - Validation Accuracy: 1.0000
+2025-04-02 17:18:22,081 - INFO - Epoch 3 - Validation Accuracy: 1.0000
+2025-04-02 17:18:22,298 - INFO - Training completed. Model saved to experiments/results/attention_comparison_full\standard_attention\final_model

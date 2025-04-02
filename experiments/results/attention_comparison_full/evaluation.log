@@ -1,0 +1,65 @@
+2025-04-02 17:07:38,248 - INFO - Evaluating model with standard attention mechanism
+2025-04-02 17:07:39,515 - WARNING - Using the latest cached version of the dataset since imdb couldn't be found on the Hugging Face Hub
+2025-04-02 17:07:39,518 - WARNING - Found the latest cached dataset configuration 'plain_text' at C:\Users\Nirmal\.cache\huggingface\datasets\imdb\plain_text\0.0.0\e6281661ce1c48d982bc483cf8a173c1bbeb5d31 (last modified on Wed Apr  2 17:07:04 2025).
+2025-04-02 17:07:39,585 - INFO - Limiting to 100 test samples as specified in config
+2025-04-02 17:07:39,586 - INFO - Evaluating on test dataset: 100 test samples
+2025-04-02 17:07:44,254 - INFO - Attention Type: standard
+2025-04-02 17:07:44,255 - INFO - Accuracy: 1.0000
+2025-04-02 17:07:44,257 - INFO - Average Latency: 0.5603 seconds
+2025-04-02 17:07:44,258 - INFO - Latency Std: 0.3048 seconds
+2025-04-02 17:07:44,258 - INFO - Average Memory Usage: 264.73 MB
+2025-04-02 17:07:44,260 - INFO - Results saved to experiments/results/attention_comparison_full\attention_comparison_full_20250402_170644\results_standard.json
+2025-04-02 17:16:14,540 - INFO - Evaluating model with standard attention mechanism
+2025-04-02 17:16:31,888 - INFO - Limiting to 100 test samples as specified in config
+2025-04-02 17:16:31,888 - INFO - Evaluating on test dataset: 100 test samples
+2025-04-02 17:16:33,261 - INFO - Attention Type: standard
+2025-04-02 17:16:33,262 - INFO - Accuracy: 1.0000
+2025-04-02 17:16:33,263 - INFO - Average Latency: 0.1338 seconds
+2025-04-02 17:16:33,263 - INFO - Latency Std: 0.1521 seconds
+2025-04-02 17:16:33,264 - INFO - Average Memory Usage: 74.57 MB
+2025-04-02 17:16:33,266 - INFO - Results saved to experiments/results/attention_comparison_full\attention_comparison_full_20250402_171533\results_standard.json
+2025-04-02 17:18:31,433 - INFO - Evaluating model with standard attention mechanism
+2025-04-02 17:18:48,378 - INFO - Limiting to 100 test samples as specified in config
+2025-04-02 17:18:48,379 - INFO - Evaluating on test dataset: 100 test samples
+2025-04-02 17:18:49,561 - INFO - Attention Type: standard
+2025-04-02 17:18:49,562 - INFO - Accuracy: 1.0000
+2025-04-02 17:18:49,562 - INFO - Average Latency: 0.1145 seconds
+2025-04-02 17:18:49,562 - INFO - Latency Std: 0.1609 seconds
+2025-04-02 17:18:49,562 - INFO - Average Memory Usage: 74.52 MB
+2025-04-02 17:18:49,564 - INFO - Results saved to experiments/results/attention_comparison_full\attention_comparison_full_20250402_171751\results_standard.json
+2025-04-02 17:19:54,166 - INFO - Evaluating model with inhibitor attention mechanism
+2025-04-02 17:20:12,645 - INFO - Limiting to 100 test samples as specified in config
+2025-04-02 17:20:12,645 - INFO - Evaluating on test dataset: 100 test samples
+2025-04-02 17:20:15,242 - INFO - Attention Type: inhibitor
+2025-04-02 17:20:15,242 - INFO - Accuracy: 1.0000
+2025-04-02 17:20:15,243 - INFO - Average Latency: 0.3082 seconds
+2025-04-02 17:20:15,243 - INFO - Latency Std: 0.2509 seconds
+2025-04-02 17:20:15,244 - INFO - Average Memory Usage: 74.52 MB
+2025-04-02 17:20:15,245 - INFO - Results saved to experiments/results/attention_comparison_full\attention_comparison_full_20250402_171751\results_inhibitor.json
+2025-04-02 17:21:17,534 - INFO - Evaluating model with quadratic_inhibitor attention mechanism
+2025-04-02 17:21:38,153 - INFO - Limiting to 100 test samples as specified in config
+2025-04-02 17:21:38,154 - INFO - Evaluating on test dataset: 100 test samples
+2025-04-02 17:21:40,635 - INFO - Attention Type: quadratic_inhibitor
+2025-04-02 17:21:40,636 - INFO - Accuracy: 1.0000
+2025-04-02 17:21:40,636 - INFO - Average Latency: 0.3021 seconds
+2025-04-02 17:21:40,636 - INFO - Latency Std: 0.2398 seconds
+2025-04-02 17:21:40,637 - INFO - Average Memory Usage: 74.52 MB
+2025-04-02 17:21:40,640 - INFO - Results saved to experiments/results/attention_comparison_full\attention_comparison_full_20250402_171751\results_quadratic_inhibitor.json
+2025-04-02 17:22:17,256 - INFO - Evaluating model with consmax attention mechanism
+2025-04-02 17:22:37,903 - INFO - Limiting to 100 test samples as specified in config
+2025-04-02 17:22:37,904 - INFO - Evaluating on test dataset: 100 test samples
+2025-04-02 17:22:38,936 - INFO - Attention Type: consmax
+2025-04-02 17:22:38,936 - INFO - Accuracy: 1.0000
+2025-04-02 17:22:38,937 - INFO - Average Latency: 0.0955 seconds
+2025-04-02 17:22:38,938 - INFO - Latency Std: 0.1236 seconds
+2025-04-02 17:22:38,939 - INFO - Average Memory Usage: 74.52 MB
+2025-04-02 17:22:38,942 - INFO - Results saved to experiments/results/attention_comparison_full\attention_comparison_full_20250402_171751\results_consmax.json
+2025-04-02 17:30:12,567 - INFO - Evaluating model with approx_exp attention mechanism
+2025-04-02 17:30:35,711 - INFO - Limiting to 100 test samples as specified in config
+2025-04-02 17:30:35,712 - INFO - Evaluating on test dataset: 100 test samples
+2025-04-02 17:30:36,986 - INFO - Attention Type: approx_exp
+2025-04-02 17:30:36,987 - INFO - Accuracy: 1.0000
+2025-04-02 17:30:36,987 - INFO - Average Latency: 0.0961 seconds
+2025-04-02 17:30:36,987 - INFO - Latency Std: 0.1255 seconds
+2025-04-02 17:30:36,987 - INFO - Average Memory Usage: 74.52 MB
+2025-04-02 17:30:36,989 - INFO - Results saved to experiments/results/attention_comparison_full\attention_comparison_full_20250402_172925\results_approx_exp.json

@@ -26,8 +26,14 @@ def load_test_data(config):
     # Load IMDB dataset
     dataset = load_dataset("imdb", split="test")
     
+    # Check if we should limit the number of test samples
+    num_test_samples = config['dataset'].get('num_test_samples', -1)
+    if num_test_samples > 0 and num_test_samples < len(dataset):
+        dataset = dataset.select(range(num_test_samples))
+        logging.info(f"Limiting to {num_test_samples} test samples as specified in config")
+    
     # Log the dataset size
-    logging.info(f"Evaluating on full test dataset: {len(dataset)} test samples")
+    logging.info(f"Evaluating on test dataset: {len(dataset)} test samples")
     
     # Load tokenizer
     tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
@@ -121,7 +127,7 @@ def main():
     parser.add_argument('--model_path', type=str, required=True, help='Path to model checkpoint')
     parser.add_argument('--config', type=str, required=True, help='Path to config file')
     parser.add_argument('--attention_type', type=str, default='standard', 
-                        choices=['standard', 'inhibitor', 'quadratic_inhibitor'], 
+                        choices=['standard', 'inhibitor', 'quadratic_inhibitor', 'consmax', 'approx_exp'], 
                         help='Type of attention mechanism used in the model')
     parser.add_argument('--output_file', type=str, default=None,
                         help='Path to save evaluation results')

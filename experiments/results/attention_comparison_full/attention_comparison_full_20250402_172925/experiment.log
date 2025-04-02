@@ -1,0 +1,8 @@
+2025-04-02 17:29:25,476 - INFO - Starting full experiment: Comparison of standard, inhibitor, quadratic inhibitor, consmax, and approx_exp attention mechanisms
+2025-04-02 17:29:25,477 - INFO - Using configuration from: experiments/attention_comparison_config.yaml
+2025-04-02 17:29:25,480 - INFO - Testing attention type: approx_exp
+2025-04-02 17:29:25,480 - INFO - Training model with approx_exp attention...
+2025-04-02 17:30:06,038 - INFO - Training completed in 40.56 seconds
+2025-04-02 17:30:06,038 - INFO - Evaluating model with approx_exp attention...
+2025-04-02 17:30:38,730 - INFO - Results summary saved to experiments/results/attention_comparison_full\attention_comparison_full_20250402_172925\results_summary.csv
+2025-04-02 17:30:38,731 - INFO - Experiment completed. Results saved to experiments/results/attention_comparison_full\attention_comparison_full_20250402_172925
