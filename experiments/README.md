@@ -87,6 +87,34 @@ Benefits of this approach:
 - Shares the same overall structure as ConsMax but with a different activation function
 - Still includes learnable parameters β and γ
 
+### 6. Standard Attention with ReLU Activation
+
+A variation of the standard attention model where all GELU activations in the feed-forward networks are replaced with ReLU activations:
+
+```
+ReLU(x) = max(0, x)
+```
+
+While the attention mechanism itself remains unchanged (using standard attention with softmax), the GELU activation in each transformer block's feed-forward network is replaced with ReLU.
+
+This allows us to study the impact of the activation function choice separate from the attention mechanism choice.
+
+### 7. Quadratic Inhibitor Attention with ReLU Activation
+
+A variation that combines the quadratic inhibitor attention mechanism with ReLU activations in the feed-forward networks:
+
+```
+Z_ij = ∑_k (1/γ) (Q_ik - K_jk)²
+H_ik = ∑_j (V_jk - Z_ij)^+
+```
+
+And in the feed-forward networks:
+```
+ReLU(x) = max(0, x)
+```
+
+This combination allows us to study the interaction effects between attention mechanism choice and activation function choice, particularly for distance-based attention mechanisms like quadratic inhibitor that already use ReLU-like operations internally.
+
 ## Running the Experiment
 
 To run the experiment:

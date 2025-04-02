@@ -19,14 +19,20 @@ def setup_logging(experiment_dir):
         ]
     )
 
-def run_training(config_path, attention_type, experiment_dir):
-    """Run training for a specific attention type."""
-    logging.info(f"Training model with {attention_type} attention...")
+def run_training(config_path, attention_type, experiment_dir, activation_type="gelu"):
+    """Run training for a specific attention type and activation function."""
     cmd = [
         "python", "train.py",
         "--config", config_path,
-        "--attention_type", attention_type
+        "--attention_type", attention_type,
+        "--activation_type", activation_type
     ]
+    
+    if activation_type == "gelu":
+        logging.info(f"Training model with {attention_type} attention...")
+    else:
+        logging.info(f"Training model with {attention_type} attention and {activation_type} activation...")
+        
     start_time = time.time()
     subprocess.run(cmd, check=True)
     end_time = time.time()
@@ -34,14 +40,19 @@ def run_training(config_path, attention_type, experiment_dir):
     logging.info(f"Training completed in {training_time:.2f} seconds")
     return training_time
 
-def run_evaluation(config_path, model_path, attention_type, results_path):
-    """Run evaluation for a specific attention type."""
-    logging.info(f"Evaluating model with {attention_type} attention...")
+def run_evaluation(config_path, model_path, attention_type, results_path, activation_type="gelu"):
+    """Run evaluation for a specific attention type and activation function."""
+    if activation_type == "gelu":
+        logging.info(f"Evaluating model with {attention_type} attention...")
+    else:
+        logging.info(f"Evaluating model with {attention_type} attention and {activation_type} activation...")
+        
     cmd = [
         "python", "evaluate.py",
         "--model_path", model_path,
         "--config", config_path,
         "--attention_type", attention_type,
+        "--activation_type", activation_type,
         "--output_file", results_path
     ]
     subprocess.run(cmd, check=True)
@@ -49,18 +60,28 @@ def run_evaluation(config_path, model_path, attention_type, results_path):
     # Load and return the results
     with open(results_path, 'r') as f:
         results = json.load(f)
+    
+    # Add activation type to results for display
+    if activation_type != "gelu":
+        results["model_type"] = f"{attention_type} ({activation_type})"
+    else:
+        results["model_type"] = attention_type
+        
     return results
 
 def create_comparison_plots(results, experiment_dir):
-    """Create plots comparing metrics across attention types."""
+    """Create plots comparing metrics across model types."""
     # Create DataFrame from results
     df = pd.DataFrame(results)
     
+    # Use model_type instead of attention_type for display if it exists
+    x_column = "model_type" if "model_type" in df.columns else "attention_type"
+    
     # Accuracy comparison
     plt.figure(figsize=(12, 8))
-    ax = df.plot(x='attention_type', y='accuracy', kind='bar', color='skyblue')
+    ax = df.plot(x=x_column, y='accuracy', kind='bar', color='skyblue')
     plt.title('Accuracy Comparison', fontsize=16)
-    plt.xlabel('Attention Type', fontsize=14)
+    plt.xlabel('Model Type', fontsize=14)
     plt.ylabel('Accuracy', fontsize=14)
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.tight_layout()
@@ -70,9 +91,9 @@ def create_comparison_plots(results, experiment_dir):
     
     # Latency comparison
     plt.figure(figsize=(12, 8))
-    ax = df.plot(x='attention_type', y='avg_latency', kind='bar', color='lightgreen')
+    ax = df.plot(x=x_column, y='avg_latency', kind='bar', color='lightgreen')
     plt.title('Average Inference Latency Comparison', fontsize=16)
-    plt.xlabel('Attention Type', fontsize=14)
+    plt.xlabel('Model Type', fontsize=14)
     plt.ylabel('Latency (seconds)', fontsize=14)
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.tight_layout()
@@ -82,9 +103,9 @@ def create_comparison_plots(results, experiment_dir):
     
     # Memory usage comparison
     plt.figure(figsize=(12, 8))
-    ax = df.plot(x='attention_type', y='avg_memory_usage', kind='bar', color='salmon')
+    ax = df.plot(x=x_column, y='avg_memory_usage', kind='bar', color='salmon')
     plt.title('Average Memory Usage Comparison', fontsize=16)
-    plt.xlabel('Attention Type', fontsize=14)
+    plt.xlabel('Model Type', fontsize=14)
     plt.ylabel('Memory Usage (MB)', fontsize=14)
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.tight_layout()
@@ -94,9 +115,9 @@ def create_comparison_plots(results, experiment_dir):
     
     # Training time comparison
     plt.figure(figsize=(12, 8))
-    ax = df.plot(x='attention_type', y='training_time', kind='bar', color='mediumpurple')
+    ax = df.plot(x=x_column, y='training_time', kind='bar', color='mediumpurple')
     plt.title('Training Time Comparison', fontsize=16)
-    plt.xlabel('Attention Type', fontsize=14)
+    plt.xlabel('Model Type', fontsize=14)
     plt.ylabel('Training Time (seconds)', fontsize=14)
     plt.grid(axis='y', linestyle='--', alpha=0.7)
     plt.tight_layout()
@@ -134,11 +155,15 @@ def run_experiment(config_path):
     # Results collection
     all_results = []
     
+    # Check configuration options for special combinations
+    run_standard_relu = config['experiment'].get('use_relu_activation', False)
+    run_quadratic_inhibitor_relu = config['experiment'].get('use_quadratic_inhibitor_relu', False)
+    
     # Run experiment for each attention type
     for attention_type in config['experiment']['attention_types']:
         logging.info(f"Testing attention type: {attention_type}")
         
-        # Run training
+        # Run training with default GELU activation
         training_time = run_training(config_path, attention_type, experiment_dir)
         
         # Path to the trained model
@@ -152,6 +177,58 @@ def run_experiment(config_path):
         
         # Add attention type and training time to results
         eval_results['attention_type'] = attention_type
+        eval_results['training_time'] = training_time
+        
+        # Collect results
+        all_results.append(eval_results)
+    
+    # Run the standard attention with ReLU if specified
+    if run_standard_relu:
+        attention_type = "standard"
+        activation_type = "relu"
+        logging.info(f"Testing standard attention with ReLU activation")
+        
+        # Run training with ReLU activation
+        training_time = run_training(config_path, attention_type, experiment_dir, activation_type)
+        
+        # Path to the trained model
+        model_path = os.path.join(config['logging']['log_dir'], f"{attention_type}_attention_{activation_type}_activation", "final_model")
+        
+        # Results path
+        results_path = os.path.join(experiment_dir, f"results_{attention_type}_{activation_type}.json")
+        
+        # Run evaluation
+        eval_results = run_evaluation(config_path, model_path, attention_type, results_path, activation_type)
+        
+        # Add attention type, activation type and training time to results
+        eval_results['attention_type'] = attention_type
+        eval_results['activation_type'] = activation_type
+        eval_results['training_time'] = training_time
+        
+        # Collect results
+        all_results.append(eval_results)
+    
+    # Run the quadratic inhibitor attention with ReLU if specified
+    if run_quadratic_inhibitor_relu:
+        attention_type = "quadratic_inhibitor"
+        activation_type = "relu"
+        logging.info(f"Testing quadratic inhibitor attention with ReLU activation")
+        
+        # Run training with ReLU activation
+        training_time = run_training(config_path, attention_type, experiment_dir, activation_type)
+        
+        # Path to the trained model
+        model_path = os.path.join(config['logging']['log_dir'], f"{attention_type}_attention_{activation_type}_activation", "final_model")
+        
+        # Results path
+        results_path = os.path.join(experiment_dir, f"results_{attention_type}_{activation_type}.json")
+        
+        # Run evaluation
+        eval_results = run_evaluation(config_path, model_path, attention_type, results_path, activation_type)
+        
+        # Add attention type, activation type and training time to results
+        eval_results['attention_type'] = attention_type
+        eval_results['activation_type'] = activation_type
         eval_results['training_time'] = training_time
         
         # Collect results

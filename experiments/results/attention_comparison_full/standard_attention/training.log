@@ -31,3 +31,19 @@
 2025-04-02 17:18:21,529 - INFO - Epoch 2 - Validation Accuracy: 1.0000
 2025-04-02 17:18:22,081 - INFO - Epoch 3 - Validation Accuracy: 1.0000
 2025-04-02 17:18:22,298 - INFO - Training completed. Model saved to experiments/results/attention_comparison_full\standard_attention\final_model
+2025-04-02 17:38:33,153 - INFO - Starting training with standard attention mechanism and gelu activation function
+2025-04-02 17:38:50,633 - INFO - Limiting to 100 training samples as specified in config
+2025-04-02 17:38:50,635 - INFO - Limiting to 100 testing samples as specified in config
+2025-04-02 17:38:50,636 - INFO - Training on dataset: 100 training samples, 100 test samples
+2025-04-02 17:38:53,608 - INFO - Epoch 1 - Validation Accuracy: 1.0000
+2025-04-02 17:38:54,169 - INFO - Epoch 2 - Validation Accuracy: 1.0000
+2025-04-02 17:38:54,775 - INFO - Epoch 3 - Validation Accuracy: 1.0000
+2025-04-02 17:38:54,995 - INFO - Training completed. Model saved to experiments/results/attention_comparison_full\standard_attention\final_model
+2025-04-02 17:42:35,525 - INFO - Starting training with standard attention mechanism and gelu activation function
+2025-04-02 17:42:50,896 - INFO - Limiting to 100 training samples as specified in config
+2025-04-02 17:42:50,897 - INFO - Limiting to 100 testing samples as specified in config
+2025-04-02 17:42:50,898 - INFO - Training on dataset: 100 training samples, 100 test samples
+2025-04-02 17:42:53,917 - INFO - Epoch 1 - Validation Accuracy: 1.0000
+2025-04-02 17:42:54,507 - INFO - Epoch 2 - Validation Accuracy: 1.0000
+2025-04-02 17:42:55,138 - INFO - Epoch 3 - Validation Accuracy: 1.0000
+2025-04-02 17:42:55,366 - INFO - Training completed. Model saved to experiments/results/attention_comparison_full\standard_attention\final_model

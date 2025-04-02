@@ -129,6 +129,9 @@ def main():
     parser.add_argument('--attention_type', type=str, default='standard', 
                         choices=['standard', 'inhibitor', 'quadratic_inhibitor', 'consmax', 'approx_exp'], 
                         help='Type of attention mechanism used in the model')
+    parser.add_argument('--activation_type', type=str, default='gelu',
+                        choices=['gelu', 'relu'],
+                        help='Type of activation function used in the feed-forward networks')
     parser.add_argument('--output_file', type=str, default=None,
                         help='Path to save evaluation results')
     args = parser.parse_args()
@@ -141,10 +144,10 @@ def main():
     setup_logging(config)
     
     # Log evaluation details
-    logging.info(f"Evaluating model with {args.attention_type} attention mechanism")
+    logging.info(f"Evaluating model with {args.attention_type} attention mechanism and {args.activation_type} activation function")
     
-    # Load model with the right attention type
-    model = BertModel(args.config, attention_type=args.attention_type)
+    # Load model with the right attention type and activation type
+    model = BertModel(args.config, attention_type=args.attention_type, activation_type=args.activation_type)
     model.load_model(args.model_path)
     
     # Load test data
@@ -155,6 +158,7 @@ def main():
     
     # Log results
     logging.info(f"Attention Type: {args.attention_type}")
+    logging.info(f"Activation Type: {args.activation_type}")
     logging.info(f"Accuracy: {metrics['accuracy']:.4f}")
     logging.info(f"Average Latency: {metrics['avg_latency']:.4f} seconds")
     logging.info(f"Latency Std: {metrics['std_latency']:.4f} seconds")
@@ -164,7 +168,10 @@ def main():
     if args.output_file:
         output_path = args.output_file
     else:
-        output_path = os.path.join(config['logging']['log_dir'], f'evaluation_results_{args.attention_type}.json')
+        model_type = f"{args.attention_type}_attention"
+        if args.activation_type != 'gelu':
+            model_type += f"_{args.activation_type}_activation"
+        output_path = os.path.join(config['logging']['log_dir'], f'evaluation_results_{model_type}.json')
     
     save_results(metrics, output_path)
     logging.info(f"Results saved to {output_path}")

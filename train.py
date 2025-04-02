@@ -158,26 +158,33 @@ def main():
     parser.add_argument('--attention_type', type=str, default='standard', 
                         choices=['standard', 'inhibitor', 'quadratic_inhibitor', 'consmax', 'approx_exp'], 
                         help='Type of attention mechanism to use')
+    parser.add_argument('--activation_type', type=str, default='gelu',
+                        choices=['gelu', 'relu'],
+                        help='Type of activation function to use in the feed-forward networks')
     args = parser.parse_args()
     
     # Load configuration
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
     
-    # Create log directory with attention type info
-    log_dir = os.path.join(config['logging']['log_dir'], f"{args.attention_type}_attention")
+    # Create log directory with attention type and activation type info
+    log_dir_name = f"{args.attention_type}_attention"
+    if args.activation_type != 'gelu':
+        log_dir_name += f"_{args.activation_type}_activation"
+    
+    log_dir = os.path.join(config['logging']['log_dir'], log_dir_name)
     config['logging']['log_dir'] = log_dir
     os.makedirs(log_dir, exist_ok=True)
     setup_logging(config)
     
     # Log experiment details
-    logging.info(f"Starting training with {args.attention_type} attention mechanism")
+    logging.info(f"Starting training with {args.attention_type} attention mechanism and {args.activation_type} activation function")
     
     # Load data
     train_dataloader, eval_dataloader = load_data(config)
     
-    # Initialize model with specified attention type
-    model = BertModel(args.config, attention_type=args.attention_type)
+    # Initialize model with specified attention type and activation type
+    model = BertModel(args.config, attention_type=args.attention_type, activation_type=args.activation_type)
     
     # Train model
     train(model, train_dataloader, eval_dataloader, config)

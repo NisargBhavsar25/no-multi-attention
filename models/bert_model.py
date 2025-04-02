@@ -48,7 +48,7 @@ class BertLayer(nn.Module):
     """
     BERT layer consisting of attention and feed-forward networks.
     """
-    def __init__(self, config: Dict[str, Any], attention_type: str = "standard"):
+    def __init__(self, config: Dict[str, Any], attention_type: str = "standard", activation_type: str = "gelu"):
         super().__init__()
         
         # Initialize attention based on specified type
@@ -71,7 +71,15 @@ class BertLayer(nn.Module):
         
         # Feed-forward network
         self.intermediate = nn.Linear(config['hidden_size'], config['intermediate_size'])
-        self.intermediate_act_fn = nn.GELU()
+        
+        # Set activation function based on parameter
+        if activation_type.lower() == "gelu":
+            self.intermediate_act_fn = nn.GELU()
+        elif activation_type.lower() == "relu":
+            self.intermediate_act_fn = nn.ReLU()
+        else:
+            raise ValueError(f"Unsupported activation type: {activation_type}")
+            
         self.output = nn.Linear(config['intermediate_size'], config['hidden_size'])
         
         # Output LayerNorm
@@ -97,10 +105,10 @@ class BertEncoder(nn.Module):
     """
     Stack of BERT layers.
     """
-    def __init__(self, config: Dict[str, Any], attention_type: str = "standard"):
+    def __init__(self, config: Dict[str, Any], attention_type: str = "standard", activation_type: str = "gelu"):
         super().__init__()
         self.layers = nn.ModuleList([
-            BertLayer(config, attention_type) for _ in range(config['num_hidden_layers'])
+            BertLayer(config, attention_type, activation_type) for _ in range(config['num_hidden_layers'])
         ])
     
     def forward(self, hidden_states: torch.Tensor, attention_mask: Optional[torch.Tensor] = None) -> torch.Tensor:
@@ -141,14 +149,14 @@ class BertModel(BaseTransformerModel):
     """
     BERT model with configurable attention mechanism.
     """
-    def __init__(self, config_path: str, attention_type: str = "standard"):
+    def __init__(self, config_path: str, attention_type: str = "standard", activation_type: str = "gelu"):
         super().__init__(config_path)
         
         # Initialize embeddings
         self.embeddings = BertEmbeddings(self.model_config)
         
-        # Initialize encoder with specified attention type
-        self.encoder = BertEncoder(self.model_config, attention_type)
+        # Initialize encoder with specified attention type and activation function
+        self.encoder = BertEncoder(self.model_config, attention_type, activation_type)
         
         # Initialize pooler and classifier
         self.pooler = BertPooler(self.model_config)

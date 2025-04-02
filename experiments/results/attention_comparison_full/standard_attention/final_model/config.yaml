@@ -14,12 +14,11 @@ evaluation:
 experiment:
   attention_types:
   - standard
-  - inhibitor
-  - quadratic_inhibitor
-  - consmax
-  description: Comparison of standard, inhibitor, quadratic inhibitor, and consmax
-    attention mechanisms
+  description: Comparison of standard, inhibitor, quadratic inhibitor, consmax, approx_exp,
+    standard with ReLU activation, and quadratic inhibitor with ReLU activation
   name: attention_comparison_full
+  use_quadratic_inhibitor_relu: true
+  use_relu_activation: false
 logging:
   eval_steps: 200
   log_dir: experiments/results/attention_comparison_full

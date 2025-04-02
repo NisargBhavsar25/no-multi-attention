@@ -49,10 +49,12 @@ logging:
 # Experiment Configuration
 experiment:
   name: "attention_comparison_full"  # Changed to indicate full experiment
-  description: "Comparison of standard, inhibitor, quadratic inhibitor, consmax, and approx_exp attention mechanisms"
+  description: "Comparison of standard, inhibitor, quadratic inhibitor, consmax, approx_exp, standard with ReLU activation, and quadratic inhibitor with ReLU activation"
   attention_types:
-    # - "standard"
-    # - "inhibitor"
-    # - "quadratic_inhibitor"
-    # - "consmax"
-    - "approx_exp" 
+    - "standard"
+    - "inhibitor"
+    - "quadratic_inhibitor"
+    - "consmax"
+    - "approx_exp"
+  use_relu_activation: true  # Enable standard attention with ReLU activation
+  use_quadratic_inhibitor_relu: true  # Enable quadratic inhibitor attention with ReLU activation 

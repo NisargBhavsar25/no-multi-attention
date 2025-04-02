@@ -1,0 +1,2 @@
+2025-04-02 17:38:16,655 - INFO - Starting full experiment: Comparison of standard, inhibitor, quadratic inhibitor, consmax, approx_exp, and standard with ReLU activation
+2025-04-02 17:38:16,655 - INFO - Using configuration from: experiments/attention_comparison_config.yaml

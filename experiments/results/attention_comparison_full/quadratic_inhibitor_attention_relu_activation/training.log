@@ -1,0 +1,8 @@
+2025-04-02 17:43:31,190 - INFO - Starting training with quadratic_inhibitor attention mechanism and relu activation function
+2025-04-02 17:43:46,562 - INFO - Limiting to 100 training samples as specified in config
+2025-04-02 17:43:46,564 - INFO - Limiting to 100 testing samples as specified in config
+2025-04-02 17:43:46,565 - INFO - Training on dataset: 100 training samples, 100 test samples
+2025-04-02 17:43:58,644 - INFO - Epoch 1 - Validation Accuracy: 1.0000
+2025-04-02 17:44:09,628 - INFO - Epoch 2 - Validation Accuracy: 1.0000
+2025-04-02 17:44:20,573 - INFO - Epoch 3 - Validation Accuracy: 1.0000
+2025-04-02 17:44:20,900 - INFO - Training completed. Model saved to experiments/results/attention_comparison_full\quadratic_inhibitor_attention_relu_activation\final_model
