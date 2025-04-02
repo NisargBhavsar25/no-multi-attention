@@ -1,0 +1,5 @@
+2025-04-02 16:09:11,058 - INFO - Starting training with quadratic_inhibitor attention mechanism
+2025-04-02 16:09:33,211 - INFO - Using reduced dataset: 200 training samples, 200 test samples (from 25000 and 25000)
+2025-04-02 16:09:57,646 - INFO - Epoch 1 - Validation Accuracy: 1.0000
+2025-04-02 16:10:18,831 - INFO - Epoch 2 - Validation Accuracy: 1.0000
+2025-04-02 16:10:19,451 - INFO - Training completed. Model saved to experiments/results/attention_comparison\quadratic_inhibitor_attention\final_model

@@ -1,0 +1,54 @@
+# Model Configuration
+model:
+  type: "bert"
+  hidden_size: 768  # Full size
+  num_hidden_layers: 6  # Moderate depth for reasonable training time
+  num_attention_heads: 12
+  intermediate_size: 3072
+  hidden_dropout_prob: 0.1
+  attention_probs_dropout_prob: 0.1
+  max_position_embeddings: 512
+  type_vocab_size: 2
+  vocab_size: 30522  # BERT vocab size
+
+# Training Configuration
+training:
+  batch_size: 16
+  learning_rate: 0.00002
+  num_train_epochs: 3
+  warmup_steps: 500
+  weight_decay: 0.01
+  max_seq_length: 256
+  gradient_accumulation_steps: 1
+  fp16: false
+
+# Dataset Configuration
+dataset:
+  name: "imdb"
+  train_file: "data/train.csv"
+  test_file: "data/test.csv"
+  cache_dir: "data/cache"
+
+# Evaluation Configuration
+evaluation:
+  batch_size: 32
+  metrics:
+    - "accuracy"
+    - "latency"
+    - "memory_usage"
+
+# Logging Configuration
+logging:
+  log_dir: "experiments/results/attention_comparison_full"
+  save_steps: 1000  # Save less frequently for full run
+  eval_steps: 200  # Evaluate metrics less frequently for full run
+  save_total_limit: 2
+
+# Experiment Configuration
+experiment:
+  name: "attention_comparison_full"  # Changed to indicate full experiment
+  description: "Comparison of standard, inhibitor, and quadratic inhibitor attention mechanisms"
+  attention_types:
+    - "standard"
+    - "inhibitor"
+    - "quadratic_inhibitor" 

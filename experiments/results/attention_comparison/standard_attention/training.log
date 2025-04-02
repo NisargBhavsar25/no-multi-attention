@@ -1,0 +1,13 @@
+2025-04-02 15:43:38,651 - INFO - Starting training with standard attention mechanism
+2025-04-02 15:46:04,577 - INFO - Starting training with standard attention mechanism
+2025-04-02 15:49:46,714 - INFO - Starting training with standard attention mechanism
+2025-04-02 15:55:54,519 - INFO - Starting training with standard attention mechanism
+2025-04-02 15:56:09,801 - INFO - Using reduced dataset: 200 training samples, 200 test samples (from 25000 and 25000)
+2025-04-02 15:56:13,984 - INFO - Epoch 1 - Validation Accuracy: 1.0000
+2025-04-02 15:56:15,374 - INFO - Epoch 2 - Validation Accuracy: 1.0000
+2025-04-02 15:56:15,679 - INFO - Training completed. Model saved to experiments/results/attention_comparison\standard_attention\final_model
+2025-04-02 16:05:38,530 - INFO - Starting training with standard attention mechanism
+2025-04-02 16:05:55,649 - INFO - Using reduced dataset: 200 training samples, 200 test samples (from 25000 and 25000)
+2025-04-02 16:05:59,915 - INFO - Epoch 1 - Validation Accuracy: 1.0000
+2025-04-02 16:06:01,341 - INFO - Epoch 2 - Validation Accuracy: 1.0000
+2025-04-02 16:06:01,718 - INFO - Training completed. Model saved to experiments/results/attention_comparison\standard_attention\final_model

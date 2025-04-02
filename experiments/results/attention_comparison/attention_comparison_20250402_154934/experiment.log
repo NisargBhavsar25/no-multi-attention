@@ -1,0 +1,4 @@
+2025-04-02 15:49:34,204 - INFO - Starting experiment: Comparing standard attention with inhibitor attention
+2025-04-02 15:49:34,205 - INFO - Using configuration from: experiments/attention_comparison_config.yaml
+2025-04-02 15:49:34,210 - INFO - Testing attention type: standard
+2025-04-02 15:49:34,211 - INFO - Training model with standard attention...

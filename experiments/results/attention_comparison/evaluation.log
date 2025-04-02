@@ -1,0 +1,40 @@
+2025-04-02 15:56:28,978 - INFO - Evaluating model with standard attention mechanism
+2025-04-02 15:56:47,923 - INFO - Using reduced dataset: 200 test samples (from 25000)
+2025-04-02 15:56:50,215 - INFO - Attention Type: standard
+2025-04-02 15:56:50,216 - INFO - Accuracy: 1.0000
+2025-04-02 15:56:50,217 - INFO - Average Latency: 0.0468 seconds
+2025-04-02 15:56:50,218 - INFO - Latency Std: 0.0511 seconds
+2025-04-02 15:56:50,219 - INFO - Average Memory Usage: 74.53 MB
+2025-04-02 15:56:50,225 - INFO - Results saved to experiments/results/attention_comparison\attention_comparison_test_20250402_155542\results_standard.json
+2025-04-02 15:58:26,517 - INFO - Evaluating model with inhibitor attention mechanism
+2025-04-02 15:58:50,553 - INFO - Using reduced dataset: 200 test samples (from 25000)
+2025-04-02 15:58:55,554 - INFO - Attention Type: inhibitor
+2025-04-02 15:58:55,555 - INFO - Accuracy: 1.0000
+2025-04-02 15:58:55,555 - INFO - Average Latency: 0.2571 seconds
+2025-04-02 15:58:55,556 - INFO - Latency Std: 0.1182 seconds
+2025-04-02 15:58:55,556 - INFO - Average Memory Usage: 74.53 MB
+2025-04-02 15:58:55,561 - INFO - Results saved to experiments/results/attention_comparison\attention_comparison_test_20250402_155542\results_inhibitor.json
+2025-04-02 16:06:16,413 - INFO - Evaluating model with standard attention mechanism
+2025-04-02 16:06:39,403 - INFO - Using reduced dataset: 200 test samples (from 25000)
+2025-04-02 16:06:41,955 - INFO - Attention Type: standard
+2025-04-02 16:06:41,955 - INFO - Accuracy: 1.0000
+2025-04-02 16:06:41,956 - INFO - Average Latency: 0.0493 seconds
+2025-04-02 16:06:41,957 - INFO - Latency Std: 0.0571 seconds
+2025-04-02 16:06:41,957 - INFO - Average Memory Usage: 74.53 MB
+2025-04-02 16:06:41,963 - INFO - Results saved to experiments/results/attention_comparison\attention_comparison_test_20250402_160525\results_standard.json
+2025-04-02 16:08:26,000 - INFO - Evaluating model with inhibitor attention mechanism
+2025-04-02 16:08:52,086 - INFO - Using reduced dataset: 200 test samples (from 25000)
+2025-04-02 16:08:57,091 - INFO - Attention Type: inhibitor
+2025-04-02 16:08:57,092 - INFO - Accuracy: 1.0000
+2025-04-02 16:08:57,093 - INFO - Average Latency: 0.2589 seconds
+2025-04-02 16:08:57,094 - INFO - Latency Std: 0.1223 seconds
+2025-04-02 16:08:57,094 - INFO - Average Memory Usage: 74.53 MB
+2025-04-02 16:08:57,099 - INFO - Results saved to experiments/results/attention_comparison\attention_comparison_test_20250402_160525\results_inhibitor.json
+2025-04-02 16:10:33,198 - INFO - Evaluating model with quadratic_inhibitor attention mechanism
+2025-04-02 16:10:54,977 - INFO - Using reduced dataset: 200 test samples (from 25000)
+2025-04-02 16:11:00,771 - INFO - Attention Type: quadratic_inhibitor
+2025-04-02 16:11:00,772 - INFO - Accuracy: 1.0000
+2025-04-02 16:11:00,772 - INFO - Average Latency: 0.2545 seconds
+2025-04-02 16:11:00,772 - INFO - Latency Std: 0.1152 seconds
+2025-04-02 16:11:00,773 - INFO - Average Memory Usage: 74.53 MB
+2025-04-02 16:11:00,781 - INFO - Results saved to experiments/results/attention_comparison\attention_comparison_test_20250402_160525\results_quadratic_inhibitor.json
