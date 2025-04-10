@@ -1,4 +1,0 @@
-2025-04-02 16:16:32,223 - INFO - Starting full experiment: Comparison of standard, inhibitor, and quadratic inhibitor attention mechanisms
-2025-04-02 16:16:32,223 - INFO - Using configuration from: experiments/attention_comparison_config.yaml
-2025-04-02 16:16:32,227 - INFO - Testing attention type: standard
-2025-04-02 16:16:32,228 - INFO - Training model with standard attention...

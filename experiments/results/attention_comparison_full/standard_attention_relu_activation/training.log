@@ -1,8 +1,0 @@
-2025-04-02 17:39:28,545 - INFO - Starting training with standard attention mechanism and relu activation function
-2025-04-02 17:39:44,598 - INFO - Limiting to 100 training samples as specified in config
-2025-04-02 17:39:44,600 - INFO - Limiting to 100 testing samples as specified in config
-2025-04-02 17:39:44,600 - INFO - Training on dataset: 100 training samples, 100 test samples
-2025-04-02 17:39:45,975 - INFO - Epoch 1 - Validation Accuracy: 1.0000
-2025-04-02 17:39:46,527 - INFO - Epoch 2 - Validation Accuracy: 1.0000
-2025-04-02 17:39:47,103 - INFO - Epoch 3 - Validation Accuracy: 1.0000
-2025-04-02 17:39:47,294 - INFO - Training completed. Model saved to experiments/results/attention_comparison_full\standard_attention_relu_activation\final_model
