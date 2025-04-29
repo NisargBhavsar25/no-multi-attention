@@ -56,5 +56,5 @@ experiment:
     - "quadratic_inhibitor"
     - "consmax"
     - "approx_exp"
-  use_relu_activation: false  # Enable standard attention with ReLU activation
+  use_relu_activation: true  # Enable standard attention with ReLU activation
   use_quadratic_inhibitor_relu: true  # Enable quadratic inhibitor attention with ReLU activation 
