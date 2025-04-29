@@ -1,53 +1,94 @@
-cmake_minimum_required(VERSION 3.26)
-project(EncryptedTransformer LANGUAGES CXX CUDA)
+cmake_minimum_required(VERSION 3.10)
+project(encrypted_transformer LANGUAGES CXX CUDA)
 
-# Set C++ standard
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Find CUDA
-find_package(CUDAToolkit REQUIRED)
+find_package(CUDA REQUIRED)
+include_directories(${CUDA_INCLUDE_DIRS})
 
-# Find HEonGPU
-find_package(HEonGPU REQUIRED)
-if(NOT HEonGPU_FOUND)
-    message(FATAL_ERROR "HEonGPU not found. Please install HEonGPU first.")
-endif()
+# Set HEonGPU directory
+set(HEONGPU_DIR "${CMAKE_CURRENT_SOURCE_DIR}/HEonGPU" CACHE PATH "Path to HEonGPU installation")
+
+# Include important directories directly
+include_directories(${HEONGPU_DIR}/src)
+include_directories(${HEONGPU_DIR}/src/heongpu/include)
+include_directories(${HEONGPU_DIR}/src/heongpu/include/host)
+include_directories(${HEONGPU_DIR}/src/heongpu/include/host/bfv)
+include_directories(${HEONGPU_DIR}/src/heongpu/include/host/ckks)
+include_directories(${HEONGPU_DIR}/src/heongpu/include/util)
+include_directories(${HEONGPU_DIR}/src/heongpu/include/kernel)
+include_directories(${HEONGPU_DIR}/thirdparty/GPU-NTT/src/include)
+include_directories(${HEONGPU_DIR}/thirdparty/GPU-NTT/src/include/common)
+include_directories(${HEONGPU_DIR}/thirdparty/GPU-NTT/src/include/ntt_merge)
+include_directories(${HEONGPU_DIR}/thirdparty/RNGonGPU/src/rngongpu/include)
+include_directories(${HEONGPU_DIR}/thirdparty/RNGonGPU/src/rngongpu/include/rand_aes)
+include_directories(${HEONGPU_DIR}/thirdparty/RNGonGPU/src/rngongpu/include/common)
+include_directories(${HEONGPU_DIR}/thirdparty/GPU-FFT/src/include)
+
+# Include bundled spdlog and fmt directories
+include_directories(${HEONGPU_DIR}/build/_deps/fmt-src/include)
+include_directories(${HEONGPU_DIR}/build/_deps/spdlog-src/include)
+include_directories(${HEONGPU_DIR}/build/_deps/spdlog-build/include)
+
+# Use our own copies of the headers to avoid conflicts
+include_directories(BEFORE ${HEONGPU_DIR}/build/_deps/spdlog-src/include)
+include_directories(BEFORE ${HEONGPU_DIR}/build/_deps/fmt-src/include)
+
+# Add RMM includes
+include_directories(${HEONGPU_DIR}/build/_deps/rmm-src/include)
+include_directories(${HEONGPU_DIR}/build/_deps/rmm-build/include)
+include_directories(${HEONGPU_DIR}/build/_deps/nvtx3-src/c/include)
+
+# Add CCCL includes - make sure these come before other includes to prevent namespace issues
+include_directories(BEFORE ${HEONGPU_DIR}/build/_deps/cccl-src/libcudacxx/include)
+include_directories(BEFORE ${HEONGPU_DIR}/build/_deps/cccl-src/cuda/std/detail)
+include_directories(BEFORE ${HEONGPU_DIR}/build/_deps/cccl-src)
+
+# Add build directories
+include_directories(${HEONGPU_DIR}/build/src)
+link_directories(${HEONGPU_DIR}/build/src/heongpu)
+
+# Define CUDA architecture - adjust based on your GPU
+# For compatibility, let's support multiple architectures
+set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS} -O2 -gencode=arch=compute_70,code=sm_70 -gencode=arch=compute_75,code=sm_75 -gencode=arch=compute_80,code=sm_80 -gencode=arch=compute_86,code=sm_86")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O2")
+
+# Add CUDA compatibility definitions
+add_definitions(-DCUDA_API_PER_THREAD_DEFAULT_STREAM)
+add_definitions(-DCUDA_API_WRAPPERS_USE_THIS_THRUST_NAMESPACE=cuda::std)
 
 # Source files
 set(SOURCES
-    main.cpp
     quadratic_inhibitor_attention.cpp
-    transformer_weights.cpp
     transformer.cpp
+    transformer_weights.cpp
     inference_pipeline.cpp
+    demo_inference.cpp
 )
 
-# Header files
-set(HEADERS
-    encrypted_transformer.h
+# Create executable
+add_executable(demo_inference ${SOURCES})
+
+# Link libraries
+target_link_libraries(demo_inference
+    heongpu-1.1
+    ${CUDA_LIBRARIES}
+    pthread
 )
 
-# Add executable
-add_executable(encrypted_transformer ${SOURCES} ${HEADERS})
-
-# Set CUDA architectures based on your GPU
-# For RTX 30 series, use 86
-# For RTX 40 series, use 89
-set_target_properties(encrypted_transformer PROPERTIES CUDA_ARCHITECTURES 89)
-
-# Link HEonGPU and CUDA
-target_link_libraries(encrypted_transformer
-    PRIVATE 
-    HEonGPU::heongpu
-    CUDA::cudart
+# Set compile definitions for RMM compatibility
+target_compile_definitions(demo_inference PRIVATE 
+    RMM_CUDA_INCLUDE_PATH="${CUDA_INCLUDE_DIRS}"
+    LIBCUDACXX_ENABLE_CUDA_IN_CUDA_FILES
 )
 
 # Enable CUDA separable compilation
-set_target_properties(encrypted_transformer PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+set_target_properties(demo_inference PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 
 # Installation
-install(TARGETS encrypted_transformer
+install(TARGETS demo_inference
     RUNTIME DESTINATION bin
 )
 
