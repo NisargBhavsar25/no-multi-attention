@@ -1,0 +1,83 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
+env/
+venv/
+ENV/
+.env/
+.venv/
+
+# PyTorch/ML
+*.pt
+*.pth
+*.onnx
+*.bin
+*.h5
+.vector_cache/
+data/cache/
+data/*.csv
+data/*.json
+data/*.txt
+!requirements.txt
+
+# Experiment outputs
+experiments/results/
+runs/
+wandb/
+lightning_logs/
+outputs/
+checkpoints/
+**/final_model/
+**/checkpoint-*/
+*.log
+*.json
+*.csv
+!experiments/attention_comparison_config.yaml
+!experiments/base_config.yaml
+
+# Jupyter
+.ipynb_checkpoints
+*.ipynb
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.vscode-test
+
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Misc
+*.bak
+*~
+*.tmp
+tmp/
+temp/ 
