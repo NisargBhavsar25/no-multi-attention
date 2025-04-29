@@ -69,6 +69,13 @@ public:
         const heongpu::Ciphertext<heongpu::Scheme::CKKS>& wv,
         const heongpu::Ciphertext<heongpu::Scheme::CKKS>& wo,
         heongpu::HEEncoder<heongpu::Scheme::CKKS>& encoder,
+        heongpu::HEEncryptor<heongpu::Scheme::CKKS>& encryptor,
+        const heongpu::Ciphertext<heongpu::Scheme::CKKS>* attention_mask = nullptr);
+    
+    // ReLU activation function for homomorphic encryption
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> ReLU(
+        const heongpu::Ciphertext<heongpu::Scheme::CKKS>& input,
+        heongpu::HEEncoder<heongpu::Scheme::CKKS>& encoder,
         heongpu::HEEncryptor<heongpu::Scheme::CKKS>& encryptor);
     
 private:
@@ -78,7 +85,8 @@ private:
         const heongpu::Ciphertext<heongpu::Scheme::CKKS>& key,
         const heongpu::Ciphertext<heongpu::Scheme::CKKS>& value,
         heongpu::HEEncoder<heongpu::Scheme::CKKS>& encoder,
-        heongpu::HEEncryptor<heongpu::Scheme::CKKS>& encryptor);
+        heongpu::HEEncryptor<heongpu::Scheme::CKKS>& encryptor,
+        const heongpu::Ciphertext<heongpu::Scheme::CKKS>* attention_mask = nullptr);
         
     // Context and operators
     heongpu::HEContext<heongpu::Scheme::CKKS>& context_;
@@ -116,7 +124,8 @@ public:
     heongpu::Ciphertext<heongpu::Scheme::CKKS> forward(
         const heongpu::Ciphertext<heongpu::Scheme::CKKS>& input,
         heongpu::HEEncoder<heongpu::Scheme::CKKS>& encoder,
-        heongpu::HEEncryptor<heongpu::Scheme::CKKS>& encryptor);
+        heongpu::HEEncryptor<heongpu::Scheme::CKKS>& encryptor,
+        const heongpu::Ciphertext<heongpu::Scheme::CKKS>* attention_mask = nullptr);
     
 private:
     // Layer normalization in encrypted domain (approximation)
@@ -136,6 +145,15 @@ private:
     // ReLU activation function approximation
     heongpu::Ciphertext<heongpu::Scheme::CKKS> reluApprox(
         const heongpu::Ciphertext<heongpu::Scheme::CKKS>& input,
+        heongpu::HEEncoder<heongpu::Scheme::CKKS>& encoder,
+        heongpu::HEEncryptor<heongpu::Scheme::CKKS>& encryptor);
+        
+    // Matrix multiplication for encrypted data
+    // Computes A * B where A is encrypted and B is encrypted
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> matrixMultiply(
+        const heongpu::Ciphertext<heongpu::Scheme::CKKS>& A,
+        const heongpu::Ciphertext<heongpu::Scheme::CKKS>& B,
+        int rows_A, int cols_A, int cols_B,
         heongpu::HEEncoder<heongpu::Scheme::CKKS>& encoder,
         heongpu::HEEncryptor<heongpu::Scheme::CKKS>& encryptor);
     
@@ -164,7 +182,7 @@ public:
         int num_attention_heads = 12);
     
     // Encrypt input, run inference, decrypt output
-    std::vector<double> infer(const std::vector<double>& input);
+    std::vector<double> infer(const std::vector<double>& input, const std::vector<bool>& attention_mask = std::vector<bool>());
     
 private:
     // Setup

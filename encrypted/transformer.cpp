@@ -37,7 +37,8 @@ void EncryptedTransformer::setWeights(std::shared_ptr<EncryptedTransformerWeight
 heongpu::Ciphertext<heongpu::Scheme::CKKS> EncryptedTransformer::forward(
     const heongpu::Ciphertext<heongpu::Scheme::CKKS>& input,
     heongpu::HEEncoder<heongpu::Scheme::CKKS>& encoder,
-    heongpu::HEEncryptor<heongpu::Scheme::CKKS>& encryptor) {
+    heongpu::HEEncryptor<heongpu::Scheme::CKKS>& encryptor,
+    const heongpu::Ciphertext<heongpu::Scheme::CKKS>* attention_mask) {
     
     if (!weights_) {
         throw std::runtime_error("Weights not set for transformer");
@@ -68,7 +69,8 @@ heongpu::Ciphertext<heongpu::Scheme::CKKS> EncryptedTransformer::forward(
                 weights_->getValueWeights()[layer],
                 weights_->getOutputWeights()[layer],
                 encoder,
-                encryptor);
+                encryptor,
+                attention_mask);
         
         // c. Residual connection
         heongpu::Ciphertext<heongpu::Scheme::CKKS> attention_residual(context_);
@@ -113,17 +115,75 @@ heongpu::Ciphertext<heongpu::Scheme::CKKS> EncryptedTransformer::layerNorm(
     options.set_storage_type(heongpu::storage_type::DEVICE)
            .set_initial_location(true);
     
-    // Note: Layer normalization is a non-polynomial operation involving mean, variance, and
-    // square root calculations. In the encrypted domain, we need to approximate it.
-    // For this example, we'll use a simplified approximation assuming the data is already
-    // roughly normalized.
+    // In standard layer normalization, we compute:
+    // LayerNorm(x) = γ * (x - mean) / sqrt(variance + ε) + β
+    // where γ and β are learnable parameters.
     
-    // In practice, we could use more sophisticated polynomial approximations or
-    // interactive protocols with partial decryption for complex operations.
+    // For homomorphic encryption, we need a polynomial approximation since we can't directly
+    // compute means, variances, or square roots on encrypted data.
     
-    // For now, we'll simply return the input as a placeholder
-    // In a real implementation, you would implement a proper approximation
-    return input;
+    // We'll use a centered polynomial approximation based on Taylor expansion:
+    // 
+    // We can assume the input is already approximately centered at 0,
+    // so we mainly need to normalize the scale. We'll use a polynomial approximation
+    // that maps a range of [-a, a] to approximately [-1, 1].
+    
+    // 1. First we need to scale down the potentially large values
+    // We'll use a fixed scaling factor that we expect will work for most inputs
+    double scale_factor = 1.0 / std::sqrt(hidden_size_);
+    std::vector<double> scale_vec(hidden_size_, scale_factor);
+    
+    heongpu::Plaintext<heongpu::Scheme::CKKS> scale_plain(context_);
+    encoder.encode(scale_plain, scale_vec, scale_);
+    
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> scale_cipher(context_);
+    encryptor.encrypt(scale_cipher, scale_plain);
+    
+    // Scale the input by the factor
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> scaled_input(context_);
+    operators_.multiply(input, scale_cipher, scaled_input, options);
+    operators_.relinearize_inplace(scaled_input, relin_key_);
+    
+    // 2. Apply a polynomial stabilizer that approximately maintains
+    // the distribution but reduces extreme values
+    //
+    // We use a cubic approximation: f(x) = x - αx³
+    // This dampens large values while preserving small ones
+    
+    // Compute x³
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> input_squared(context_);
+    operators_.multiply(scaled_input, scaled_input, input_squared, options);
+    operators_.relinearize_inplace(input_squared, relin_key_);
+    
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> input_cubed(context_);
+    operators_.multiply(input_squared, scaled_input, input_cubed, options);
+    operators_.relinearize_inplace(input_cubed, relin_key_);
+    
+    // Scale the cubic term with α = 0.1
+    // This dampens large values while keeping smaller values mostly intact
+    double cubic_coef = 0.1;
+    std::vector<double> cubic_vec(hidden_size_, cubic_coef);
+    
+    heongpu::Plaintext<heongpu::Scheme::CKKS> cubic_plain(context_);
+    encoder.encode(cubic_plain, cubic_vec, scale_);
+    
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> cubic_cipher(context_);
+    encryptor.encrypt(cubic_cipher, cubic_plain);
+    
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> scaled_cubic(context_);
+    operators_.multiply(input_cubed, cubic_cipher, scaled_cubic, options);
+    operators_.relinearize_inplace(scaled_cubic, relin_key_);
+    
+    // Subtract from the scaled input: x - αx³
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> stabilized(context_);
+    operators_.sub(scaled_input, scaled_cubic, stabilized, options);
+    
+    // 3. Finally, apply a learnable scale and bias (gamma and beta in standard LayerNorm)
+    // For simplicity, we'll use fixed values here (gamma=1, beta=0),
+    // but in a real implementation these would be learned parameters
+    
+    // The result is already scaled appropriately with gamma=1, beta=0
+    return stabilized;
 }
 
 heongpu::Ciphertext<heongpu::Scheme::CKKS> EncryptedTransformer::feedForward(
@@ -138,18 +198,23 @@ heongpu::Ciphertext<heongpu::Scheme::CKKS> EncryptedTransformer::feedForward(
     options.set_storage_type(heongpu::storage_type::DEVICE)
            .set_initial_location(true);
     
-    // First linear layer
-    heongpu::Ciphertext<heongpu::Scheme::CKKS> intermediate(context_);
-    operators_.multiply(input, ff1_weights, intermediate, options);
-    operators_.relinearize_inplace(intermediate, relin_key_);
+    // First linear layer (matrix multiplication)
+    // Assuming dimensions: input [batch_size, hidden_size], ff1_weights [hidden_size, ff_dim]
+    // Result: [batch_size, ff_dim]
+    // For simplicity, we assume batch_size=1 in this implementation
+    int ff_dim = 4 * hidden_size_; // Typical dimension for FF layer is 4x hidden size
+    
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> intermediate = 
+        matrixMultiply(input, ff1_weights, 1, hidden_size_, ff_dim, encoder, encryptor);
     
     // ReLU activation (approximated)
     heongpu::Ciphertext<heongpu::Scheme::CKKS> activated = reluApprox(intermediate, encoder, encryptor);
     
-    // Second linear layer
-    heongpu::Ciphertext<heongpu::Scheme::CKKS> output(context_);
-    operators_.multiply(activated, ff2_weights, output, options);
-    operators_.relinearize_inplace(output, relin_key_);
+    // Second linear layer (matrix multiplication)
+    // Assuming dimensions: activated [batch_size, ff_dim], ff2_weights [ff_dim, hidden_size]
+    // Result: [batch_size, hidden_size]
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> output =
+        matrixMultiply(activated, ff2_weights, 1, ff_dim, hidden_size_, encoder, encryptor);
     
     return output;
 }
@@ -165,56 +230,131 @@ heongpu::Ciphertext<heongpu::Scheme::CKKS> EncryptedTransformer::reluApprox(
            .set_initial_location(true);
     
     // Note: ReLU is a non-polynomial function, so we need a polynomial approximation
-    // For this example implementation, we'll use a simple approximation
-    // In a real implementation, you would use a more accurate polynomial approximation
+    // We'll use the approximation: ReLU(x) ≈ 0.625x² + 0.5x
     
-    // For this example, we'll just use a simple quadratic approximation of ReLU
-    // f(x) = 0.25 * x² + 0.5 * x + 0.25 for x in [-1, 1]
-    // This is just a placeholder - in practice, you would use a better approximation
-    
-    // Square term: 0.25 * x²
+    // Square term: 0.625 * x²
     heongpu::Ciphertext<heongpu::Scheme::CKKS> squared(context_);
     operators_.multiply(input, input, squared, options);
     operators_.relinearize_inplace(squared, relin_key_);
     
-    // Scale 0.25
-    std::vector<double> coef_vec(hidden_size_, 0.25);
-    heongpu::Plaintext<heongpu::Scheme::CKKS> coef_plain(context_);
-    encoder.encode(coef_plain, coef_vec, scale_);
+    // Scale 0.625
+    std::vector<double> coef1_vec(hidden_size_, 0.625);
+    heongpu::Plaintext<heongpu::Scheme::CKKS> coef1_plain(context_);
+    encoder.encode(coef1_plain, coef1_vec, scale_);
     
-    heongpu::Ciphertext<heongpu::Scheme::CKKS> coef_cipher(context_);
-    encryptor.encrypt(coef_cipher, coef_plain);
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> coef1_cipher(context_);
+    encryptor.encrypt(coef1_cipher, coef1_plain);
     
     heongpu::Ciphertext<heongpu::Scheme::CKKS> squared_scaled(context_);
-    operators_.multiply(squared, coef_cipher, squared_scaled, options);
+    operators_.multiply(squared, coef1_cipher, squared_scaled, options);
     operators_.relinearize_inplace(squared_scaled, relin_key_);
     
     // Linear term: 0.5 * x
-    std::vector<double> half_vec(hidden_size_, 0.5);
-    heongpu::Plaintext<heongpu::Scheme::CKKS> half_plain(context_);
-    encoder.encode(half_plain, half_vec, scale_);
+    std::vector<double> coef2_vec(hidden_size_, 0.5);
+    heongpu::Plaintext<heongpu::Scheme::CKKS> coef2_plain(context_);
+    encoder.encode(coef2_plain, coef2_vec, scale_);
     
-    heongpu::Ciphertext<heongpu::Scheme::CKKS> half_cipher(context_);
-    encryptor.encrypt(half_cipher, half_plain);
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> coef2_cipher(context_);
+    encryptor.encrypt(coef2_cipher, coef2_plain);
     
     heongpu::Ciphertext<heongpu::Scheme::CKKS> linear_term(context_);
-    operators_.multiply(input, half_cipher, linear_term, options);
+    operators_.multiply(input, coef2_cipher, linear_term, options);
     operators_.relinearize_inplace(linear_term, relin_key_);
     
-    // Constant term: 0.25
-    std::vector<double> const_vec(hidden_size_, 0.25);
-    heongpu::Plaintext<heongpu::Scheme::CKKS> const_plain(context_);
-    encoder.encode(const_plain, const_vec, scale_);
+    // Add terms: 0.625 * x² + 0.5 * x
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> result(context_);
+    operators_.add(squared_scaled, linear_term, result, options);
     
-    heongpu::Ciphertext<heongpu::Scheme::CKKS> const_cipher(context_);
-    encryptor.encrypt(const_cipher, const_plain);
+    return result;
+}
+
+heongpu::Ciphertext<heongpu::Scheme::CKKS> EncryptedTransformer::matrixMultiply(
+    const heongpu::Ciphertext<heongpu::Scheme::CKKS>& A,
+    const heongpu::Ciphertext<heongpu::Scheme::CKKS>& B,
+    int rows_A, int cols_A, int cols_B,
+    heongpu::HEEncoder<heongpu::Scheme::CKKS>& encoder,
+    heongpu::HEEncryptor<heongpu::Scheme::CKKS>& encryptor) {
     
-    // Add all terms: 0.25 * x² + 0.5 * x + 0.25
-    heongpu::Ciphertext<heongpu::Scheme::CKKS> sum1(context_);
-    operators_.add(squared_scaled, linear_term, sum1, options);
+    // Set execution options for GPU operations
+    heongpu::ExecutionOptions options;
+    options.set_storage_type(heongpu::storage_type::DEVICE)
+           .set_initial_location(true);
+    
+    // Initialize result matrix as zeros
+    std::vector<double> zeros(rows_A * cols_B, 0.0);
+    heongpu::Plaintext<heongpu::Scheme::CKKS> zeros_plain(context_);
+    encoder.encode(zeros_plain, zeros, scale_);
     
     heongpu::Ciphertext<heongpu::Scheme::CKKS> result(context_);
-    operators_.add(sum1, const_cipher, result, options);
+    encryptor.encrypt(result, zeros_plain);
+    
+    // For each element in the output matrix
+    for (int i = 0; i < rows_A; ++i) {
+        for (int j = 0; j < cols_B; ++j) {
+            
+            // Create mask for the current result position
+            std::vector<double> result_mask(rows_A * cols_B, 0.0);
+            result_mask[i * cols_B + j] = 1.0;
+            
+            heongpu::Plaintext<heongpu::Scheme::CKKS> result_mask_plain(context_);
+            encoder.encode(result_mask_plain, result_mask, scale_);
+            
+            heongpu::Ciphertext<heongpu::Scheme::CKKS> result_mask_cipher(context_);
+            encryptor.encrypt(result_mask_cipher, result_mask_plain);
+            
+            // For each element in the dot product
+            heongpu::Ciphertext<heongpu::Scheme::CKKS> dot_product(context_);
+            encryptor.encrypt(dot_product, zeros_plain); // Initialize to zeros
+            
+            for (int k = 0; k < cols_A; ++k) {
+                // Create masks for accessing elements from A and B
+                std::vector<double> a_mask(rows_A * cols_A, 0.0);
+                a_mask[i * cols_A + k] = 1.0;
+                
+                std::vector<double> b_mask(cols_A * cols_B, 0.0);
+                b_mask[k * cols_B + j] = 1.0;
+                
+                heongpu::Plaintext<heongpu::Scheme::CKKS> a_mask_plain(context_);
+                encoder.encode(a_mask_plain, a_mask, scale_);
+                
+                heongpu::Plaintext<heongpu::Scheme::CKKS> b_mask_plain(context_);
+                encoder.encode(b_mask_plain, b_mask, scale_);
+                
+                heongpu::Ciphertext<heongpu::Scheme::CKKS> a_mask_cipher(context_);
+                encryptor.encrypt(a_mask_cipher, a_mask_plain);
+                
+                heongpu::Ciphertext<heongpu::Scheme::CKKS> b_mask_cipher(context_);
+                encryptor.encrypt(b_mask_cipher, b_mask_plain);
+                
+                // Extract elements from A and B
+                heongpu::Ciphertext<heongpu::Scheme::CKKS> a_element(context_);
+                operators_.multiply(A, a_mask_cipher, a_element, options);
+                operators_.relinearize_inplace(a_element, relin_key_);
+                
+                heongpu::Ciphertext<heongpu::Scheme::CKKS> b_element(context_);
+                operators_.multiply(B, b_mask_cipher, b_element, options);
+                operators_.relinearize_inplace(b_element, relin_key_);
+                
+                // Multiply and add to dot product
+                heongpu::Ciphertext<heongpu::Scheme::CKKS> product(context_);
+                operators_.multiply(a_element, b_element, product, options);
+                operators_.relinearize_inplace(product, relin_key_);
+                
+                heongpu::Ciphertext<heongpu::Scheme::CKKS> updated_dot_product(context_);
+                operators_.add(dot_product, product, updated_dot_product, options);
+                dot_product = updated_dot_product;
+            }
+            
+            // Update the result with the computed dot product
+            heongpu::Ciphertext<heongpu::Scheme::CKKS> masked_dot_product(context_);
+            operators_.multiply(dot_product, result_mask_cipher, masked_dot_product, options);
+            operators_.relinearize_inplace(masked_dot_product, relin_key_);
+            
+            heongpu::Ciphertext<heongpu::Scheme::CKKS> updated_result(context_);
+            operators_.add(result, masked_dot_product, updated_result, options);
+            result = updated_result;
+        }
+    }
     
     return result;
 } 
