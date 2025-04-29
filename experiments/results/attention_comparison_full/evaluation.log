@@ -1,0 +1,20 @@
+2025-04-29 12:46:17,386 - INFO - Evaluating model with standard attention mechanism and gelu activation function
+2025-04-29 12:46:34,172 - INFO - Limiting to 100 test samples as specified in config
+2025-04-29 12:46:34,172 - INFO - Evaluating on test dataset: 100 test samples
+2025-04-29 12:46:35,242 - INFO - Attention Type: standard
+2025-04-29 12:46:35,242 - INFO - Activation Type: gelu
+2025-04-29 12:46:35,243 - INFO - Accuracy: 1.0000
+2025-04-29 12:46:35,243 - INFO - Average Latency: 0.0951 seconds
+2025-04-29 12:46:35,243 - INFO - Latency Std: 0.1254 seconds
+2025-04-29 12:46:35,244 - INFO - Average Memory Usage: 74.52 MB
+2025-04-29 12:46:35,245 - INFO - Results saved to experiments/results/attention_comparison_full\attention_comparison_full_20250429_124537\results_standard.json
+2025-04-29 12:57:52,967 - INFO - Evaluating model with inhibitor attention mechanism and gelu activation function
+2025-04-29 12:58:12,995 - INFO - Limiting to 100 test samples as specified in config
+2025-04-29 12:58:12,996 - INFO - Evaluating on test dataset: 100 test samples
+2025-04-29 12:58:15,432 - INFO - Attention Type: inhibitor
+2025-04-29 12:58:15,432 - INFO - Activation Type: gelu
+2025-04-29 12:58:15,433 - INFO - Accuracy: 1.0000
+2025-04-29 12:58:15,433 - INFO - Average Latency: 0.2765 seconds
+2025-04-29 12:58:15,433 - INFO - Latency Std: 0.1981 seconds
+2025-04-29 12:58:15,433 - INFO - Average Memory Usage: 74.52 MB
+2025-04-29 12:58:15,435 - INFO - Results saved to experiments/results/attention_comparison_full\attention_comparison_full_20250429_125645\results_inhibitor.json

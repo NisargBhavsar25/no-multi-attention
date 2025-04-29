@@ -9,7 +9,7 @@ class ApproxExpAttention(nn.Module):
     instead of the standard exp() used in ConsMax.
     
     The approximation used is:
-    EXP(x) ≈ (1 + x/2^r)^(2^r), x ≤ 0, with r = 7
+    EXP(x) ≈ (1 + x/2r)^(2r), x ≤ 0, with r = 7
     
     This is then used in a ConsMax-like formula:
     ApproxExp(S_i) = (approx_exp(S_i-β))/γ
@@ -33,9 +33,10 @@ class ApproxExpAttention(nn.Module):
         # Dropout
         self.dropout = nn.Dropout(config['attention_probs_dropout_prob'])
         
-        # ConsMax parameters
+        # ConsMax parameters - initialize with better values for stability
         self.beta = nn.Parameter(torch.zeros(1))  # Shift parameter
-        self.gamma = nn.Parameter(torch.ones(1))  # Scale parameter
+        # Scale gamma by the dimension for better numerical stability
+        self.gamma = nn.Parameter(torch.ones(1) * math.sqrt(self.attention_head_size))  
         
         # Approximation parameter r=7 (fixed)
         self.r = 7
@@ -56,9 +57,11 @@ class ApproxExpAttention(nn.Module):
         # Ensure x is non-positive for approximation validity
         x = torch.clamp(x, max=0)
         
-        # Apply the approximation formula
-        base = 1 + x / (2 ** self.r)
-        result = torch.pow(base, 2 ** self.r)
+        # Apply the approximation formula correctly
+        # 2r = 14, not 2^r = 128
+        denominator = 2 * self.r
+        base = 1 + x / denominator
+        result = torch.pow(base, denominator)
         
         return result
     
@@ -79,7 +82,13 @@ class ApproxExpAttention(nn.Module):
         scores_shifted = scores_shifted - scores_max
         
         # Apply our approximated exponential function and scale by gamma
-        attention_probs = self.approx_exp(scores_shifted) / self.gamma
+        attention_probs = self.approx_exp(scores_shifted) / (self.gamma * math.sqrt(self.attention_head_size))
+        
+        # Row-wise normalization to ensure attention probabilities sum to 1
+        attention_probs_sum = attention_probs.sum(dim=-1, keepdim=True) + 1e-6
+        attention_probs = attention_probs / attention_probs_sum
+        
+        # Apply dropout
         attention_probs = self.dropout(attention_probs)
         
         return attention_probs

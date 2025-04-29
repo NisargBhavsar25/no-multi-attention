@@ -27,8 +27,9 @@ class InhibitorAttention(nn.Module):
         # Dropout
         self.dropout = nn.Dropout(config['attention_probs_dropout_prob'])
         
-        # Manhattan distance scaling factor (gamma)
-        self.gamma = nn.Parameter(torch.ones(1))
+        # Manhattan distance scaling factor (gamma) - initialize with a better scaling factor
+        # Initialize with sqrt(attention_head_size) for better numerical stability
+        self.gamma = nn.Parameter(torch.ones(1) * math.sqrt(self.attention_head_size))
         
         # Inhibition shift factor (alpha)
         self.alpha = nn.Parameter(torch.zeros(1))
@@ -38,6 +39,12 @@ class InhibitorAttention(nn.Module):
         new_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
         x = x.view(*new_shape)
         return x.permute(0, 2, 1, 3)
+    
+    def normalize_attention(self, attention_probs):
+        """Add row-wise normalization to prevent attention collapse"""
+        # Add small epsilon to avoid division by zero
+        row_sum = attention_probs.sum(dim=-1, keepdim=True) + 1e-6
+        return attention_probs / row_sum
     
     def forward(self, hidden_states, attention_mask=None):
         # Linear projections
@@ -60,8 +67,9 @@ class InhibitorAttention(nn.Module):
         # |Q_ik - K_jk|
         abs_diff = torch.abs(query_expanded - key_expanded)  # [B, N, S_q, S_k, D]
         
-        # Sum over the last dimension and scale by 1/gamma
-        z_scores = torch.sum(abs_diff, dim=-1) / self.gamma  # [B, N, S_q, S_k]
+        # Sum over the last dimension and scale by 1/gamma with proper scaling factor
+        # Apply scaling factor based on dimensionality for better numerical stability
+        z_scores = torch.sum(abs_diff, dim=-1) / (self.gamma * math.sqrt(self.attention_head_size))  # [B, N, S_q, S_k]
         
         # Apply shifted inhibition: Z' = (Z - α)^+
         # This helps with zero inhibition score

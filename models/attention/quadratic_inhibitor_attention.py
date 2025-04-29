@@ -30,7 +30,8 @@ class QuadraticInhibitorAttention(nn.Module):
         self.dropout = nn.Dropout(config['attention_probs_dropout_prob'])
         
         # Gamma parameter for scaling the quadratic form
-        self.gamma = nn.Parameter(torch.ones(1))
+        # Initialize with sqrt(attention_head_size) for better numerical stability
+        self.gamma = nn.Parameter(torch.ones(1) * math.sqrt(self.attention_head_size))
         
         # Constant term derived from head dimension (3d/16)
         self.register_buffer('dim_scale', torch.tensor(3.0 * self.attention_head_size / 16.0))
@@ -40,6 +41,12 @@ class QuadraticInhibitorAttention(nn.Module):
         new_shape = x.size()[:-1] + (self.num_attention_heads, self.attention_head_size)
         x = x.view(*new_shape)
         return x.permute(0, 2, 1, 3)
+    
+    def normalize_attention(self, attention_probs):
+        """Add row-wise normalization to prevent attention collapse"""
+        # Add small epsilon to avoid division by zero
+        row_sum = attention_probs.sum(dim=-1, keepdim=True) + 1e-6
+        return attention_probs / row_sum
     
     def forward(self, hidden_states, attention_mask=None):
         # Linear projections
@@ -67,11 +74,11 @@ class QuadraticInhibitorAttention(nn.Module):
         squared_l2 = torch.sum(diff * diff, dim=-1)
         
         # Calculate Z_ij = (15/(16γ) * ||Q_i - K_j||²_2 + 3d/(16γ))
-        # First compute the coefficient 15/(16γ)
-        coef = 15.0 / (16.0 * self.gamma)
+        # Apply proper scaling including the dimension factor
+        coef = 15.0 / (16.0 * self.gamma * math.sqrt(self.attention_head_size))
         
-        # Compute Z_ij
-        z_scores = coef * squared_l2 + self.dim_scale / self.gamma  # [B, N, S_q, S_k]
+        # Compute Z_ij with scaled coefficient
+        z_scores = coef * squared_l2 + self.dim_scale / (self.gamma * math.sqrt(self.attention_head_size))  # [B, N, S_q, S_k]
         
         # Apply attention mask if provided
         if attention_mask is not None:

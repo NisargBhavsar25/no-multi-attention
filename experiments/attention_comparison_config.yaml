@@ -28,8 +28,8 @@ dataset:
   train_file: "data/train.csv"
   test_file: "data/test.csv"
   cache_dir: "data/cache"
-  num_train_samples: 100  # Number of training samples to use (-1 for all samples)
-  num_test_samples: 100   # Number of test samples to use (-1 for all samples)
+  num_train_samples: -1  # Number of training samples to use (-1 for all samples)
+  num_test_samples: -1   # Number of test samples to use (-1 for all samples)
 
 # Evaluation Configuration
 evaluation:
@@ -51,10 +51,10 @@ experiment:
   name: "attention_comparison_full"  # Changed to indicate full experiment
   description: "Comparison of standard, inhibitor, quadratic inhibitor, consmax, approx_exp, standard with ReLU activation, and quadratic inhibitor with ReLU activation"
   attention_types:
-    - "standard"
-    - "inhibitor"
+    # - "standard"
+    # - "inhibitor"
     - "quadratic_inhibitor"
-    - "consmax"
+    # - "consmax"
     - "approx_exp"
-  use_relu_activation: true  # Enable standard attention with ReLU activation
+  use_relu_activation: false  # Enable standard attention with ReLU activation
   use_quadratic_inhibitor_relu: true  # Enable quadratic inhibitor attention with ReLU activation 

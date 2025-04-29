@@ -1,0 +1,9 @@
+2025-04-29 12:45:48,913 - INFO - Starting training with standard attention mechanism and gelu activation function
+2025-04-29 12:46:04,896 - INFO - Limiting to 100 training samples as specified in config
+2025-04-29 12:46:04,898 - INFO - Limiting to 100 testing samples as specified in config
+2025-04-29 12:46:04,898 - INFO - Training on dataset: 100 training samples, 100 test samples
+2025-04-29 12:46:08,446 - INFO - Epoch 1 - Validation Accuracy: 1.0000
+2025-04-29 12:46:09,015 - INFO - Epoch 2 - Validation Accuracy: 1.0000
+2025-04-29 12:46:09,590 - INFO - Epoch 3 - Validation Accuracy: 1.0000
+2025-04-29 12:46:09,820 - INFO - Training completed. Model saved to experiments/results/attention_comparison_full\standard_attention\final_model
+2025-04-29 12:56:06,144 - INFO - Starting training with standard attention mechanism and gelu activation function
