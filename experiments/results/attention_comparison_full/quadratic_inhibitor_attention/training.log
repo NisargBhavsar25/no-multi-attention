@@ -1,0 +1,2 @@
+2025-04-29 14:50:31,260 - INFO - Starting training with quadratic_inhibitor attention mechanism and gelu activation function
+2025-04-29 14:50:50,392 - INFO - Training on dataset: 25000 training samples, 25000 test samples
