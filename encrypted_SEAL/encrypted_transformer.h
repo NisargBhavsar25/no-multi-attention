@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <iostream>
 
 /**
  * Encrypted Quadratic Inhibitor Transformer Implementation
@@ -23,29 +24,42 @@ public:
         seal::CKKSEncoder& encoder,
         double scale);
 
-    // Get weights for different transformer components
-    const std::vector<seal::Ciphertext>& getQueryWeights() const { return wq_weights; }
-    const std::vector<seal::Ciphertext>& getKeyWeights() const { return wk_weights; }
-    const std::vector<seal::Ciphertext>& getValueWeights() const { return wv_weights; }
-    const std::vector<seal::Ciphertext>& getOutputWeights() const { return wo_weights; }
-    const std::vector<seal::Ciphertext>& getFF1Weights() const { return ff1_weights; }
-    const std::vector<seal::Ciphertext>& getFF2Weights() const { return ff2_weights; }
+    // Add method to create dummy weights for testing
+    void createDummyWeights(int hidden_size,
+                           seal::Encryptor& encryptor,
+                           seal::CKKSEncoder& encoder,
+                           double scale);
+
+    // Add method to print parameters for debugging
+    void printParameterInfo() const {
+        std::cout << "Debug: Weight parameter information" << std::endl;
+        std::cout << "Query weight scale: " << query_weight_.scale() << std::endl;
+        std::cout << "Key weight scale: " << key_weight_.scale() << std::endl;
+        std::cout << "Value weight scale: " << value_weight_.scale() << std::endl;
+        std::cout << "Output weight scale: " << output_weight_.scale() << std::endl;
+        std::cout << "FF1 weight scale: " << ff1_weight_.scale() << std::endl;
+        std::cout << "FF2 weight scale: " << ff2_weight_.scale() << std::endl;
+    }
+
+    // Access methods for weights
+    seal::Plaintext& getQueryWeight() { return query_weight_; }
+    seal::Plaintext& getKeyWeight() { return key_weight_; }
+    seal::Plaintext& getValueWeight() { return value_weight_; }
+    seal::Plaintext& getOutputWeight() { return output_weight_; }
+    seal::Plaintext& getFeedForward1Weight() { return ff1_weight_; }
+    seal::Plaintext& getFeedForward2Weight() { return ff2_weight_; }
 
 private:
     // Reference to the context
     std::shared_ptr<seal::SEALContext> context_;
 
-    // Query, Key, Value weights for each layer
-    std::vector<seal::Ciphertext> wq_weights;
-    std::vector<seal::Ciphertext> wk_weights;
-    std::vector<seal::Ciphertext> wv_weights;
-    
-    // Output projection weights
-    std::vector<seal::Ciphertext> wo_weights;
-    
-    // Feed-forward weights
-    std::vector<seal::Ciphertext> ff1_weights;
-    std::vector<seal::Ciphertext> ff2_weights;
+    // Weights for the transformer
+    seal::Plaintext query_weight_;  // W_Q
+    seal::Plaintext key_weight_;    // W_K
+    seal::Plaintext value_weight_;  // W_V
+    seal::Plaintext output_weight_; // W_O
+    seal::Plaintext ff1_weight_;    // Feedforward network first layer
+    seal::Plaintext ff2_weight_;    // Feedforward network second layer
 
     // Helper function to load weight matrices
     std::vector<std::vector<double>> loadWeightsFromFile(const std::string& file_path);
@@ -128,8 +142,8 @@ class EncryptedTransformer {
 public:
     EncryptedTransformer(
         std::shared_ptr<seal::SEALContext> context,
-        seal::RelinKeys relin_keys,
-        seal::GaloisKeys galois_keys,
+        const seal::RelinKeys& relin_keys,
+        const seal::GaloisKeys& galois_keys,
         int num_layers,
         int hidden_size,
         int num_attention_heads,
@@ -137,6 +151,11 @@ public:
     
     // Initialize with encrypted weights
     void setWeights(std::shared_ptr<EncryptedTransformerWeights> weights);
+    
+    // Add method to control noise management strategy
+    void setRescalingStrategy(bool aggressive_rescaling) {
+        aggressive_rescaling_ = aggressive_rescaling;
+    }
     
     // Process encrypted input through the transformer
     seal::Ciphertext forward(
@@ -147,6 +166,28 @@ public:
         const seal::Ciphertext* attention_mask = nullptr);
     
 private:
+    // Helper method to rescale ciphertext if needed based on strategy
+    void rescaleIfNeeded(
+        seal::Ciphertext& cipher,
+        seal::Evaluator& evaluator,
+        seal::CKKSEncoder& encoder);
+        
+    // Transformer layer implementation
+    seal::Ciphertext transformerLayer(
+        const seal::Ciphertext& input,
+        seal::CKKSEncoder& encoder,
+        seal::Encryptor& encryptor,
+        seal::Evaluator& evaluator,
+        seal::Ciphertext* attention_mask);
+        
+    // Multi-head attention implementation
+    seal::Ciphertext multiHeadAttention(
+        const seal::Ciphertext& input,
+        seal::CKKSEncoder& encoder,
+        seal::Encryptor& encryptor,
+        seal::Evaluator& evaluator,
+        seal::Ciphertext* attention_mask);
+    
     // Layer normalization in encrypted domain (approximation)
     seal::Ciphertext layerNorm(
         const seal::Ciphertext& input,
@@ -191,6 +232,9 @@ private:
     int hidden_size_;
     int num_attention_heads_;
     double scale_; // Scale factor for CKKS encoding
+    
+    // Flag to control rescaling strategy
+    bool aggressive_rescaling_ = false;
 };
 
 class EncryptedInferencePipeline {

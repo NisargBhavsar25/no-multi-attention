@@ -2,19 +2,18 @@
 #include <fstream>
 #include <iostream>
 #include <stdexcept>
-#include <cmath>
 #include <random>
 
+// Constructor for the weights
 EncryptedTransformerWeights::EncryptedTransformerWeights(std::shared_ptr<seal::SEALContext> context)
     : context_(context) {
 }
 
-void EncryptedTransformerWeights::loadFromPretrained(
-    const std::string& model_path,
-    seal::Encryptor& encryptor,
-    seal::CKKSEncoder& encoder,
-    double scale) {
-    
+// Load weights from pre-trained model files
+void EncryptedTransformerWeights::loadFromPretrained(const std::string& model_path,
+                                                  seal::Encryptor& encryptor,
+                                                  seal::CKKSEncoder& encoder,
+                                                  double scale) {
     try {
         // Load query weight
         std::string wq_path = model_path + "/wq.bin";
@@ -133,48 +132,16 @@ void EncryptedTransformerWeights::loadFromPretrained(
         
         encoder.encode(ff2_values, scale, ff2_weight_);
         
-        std::cout << "Successfully loaded all weight matrices" << std::endl;
-    }
-    catch (const std::exception& e) {
-        std::cout << "Error loading pretrained weights: " << e.what() << std::endl;
-        std::cout << "Generating minimal random weights instead" << std::endl;
-        
-        // Create minimal dummy weights when loading fails
-        createDummyWeights(64, encryptor, encoder, scale);
+    } catch (const std::exception& e) {
+        throw std::runtime_error("Error loading pretrained weights: " + std::string(e.what()));
     }
 }
 
-// Load weights from a binary file
-std::vector<std::vector<double>> EncryptedTransformerWeights::loadWeightsFromFile(const std::string& filepath) {
-    std::ifstream file(filepath, std::ios::binary);
-    if (!file.is_open()) {
-        throw std::runtime_error("Failed to open weight file: " + filepath);
-    }
-    
-    int rows, cols;
-    file.read(reinterpret_cast<char*>(&rows), sizeof(int));
-    file.read(reinterpret_cast<char*>(&cols), sizeof(int));
-    
-    std::vector<std::vector<double>> matrix(rows, std::vector<double>(cols));
-    for (int i = 0; i < rows; i++) {
-        for (int j = 0; j < cols; j++) {
-            double val;
-            file.read(reinterpret_cast<char*>(&val), sizeof(double));
-            matrix[i][j] = val;
-        }
-    }
-    
-    file.close();
-    return matrix;
-}
-
-// Create dummy weights for testing
-void EncryptedTransformerWeights::createDummyWeights(
-    int hidden_size,
-    seal::Encryptor& encryptor,
-    seal::CKKSEncoder& encoder,
-    double scale) {
-    
+// Create minimal dummy weights for testing
+void EncryptedTransformerWeights::createDummyWeights(int hidden_size,
+                                                   seal::Encryptor& encryptor,
+                                                   seal::CKKSEncoder& encoder,
+                                                   double scale) {
     std::cout << "Creating minimal dummy weights for hidden_size = " << hidden_size << std::endl;
     
     // Use a fixed seed for reproducibility
@@ -240,4 +207,182 @@ void EncryptedTransformerWeights::createDummyWeights(
     encoder.encode(ff2_values, scale, ff2_weight_);
     
     std::cout << "Dummy weights created successfully" << std::endl;
+}
+
+// Constructor for the transformer
+EncryptedTransformer::EncryptedTransformer(
+    std::shared_ptr<seal::SEALContext> context,
+    const seal::RelinKeys& relin_keys,
+    const seal::GaloisKeys& galois_keys,
+    int num_layers,
+    int hidden_size,
+    int num_heads,
+    double scale)
+    : context_(context),
+      relin_keys_(relin_keys),
+      galois_keys_(galois_keys),
+      num_layers_(num_layers),
+      hidden_size_(hidden_size),
+      num_heads_(num_heads),
+      scale_(scale) {
+}
+
+void EncryptedTransformer::setWeights(std::shared_ptr<EncryptedTransformerWeights> weights) {
+    weights_ = weights;
+}
+
+// Helper for noise management
+void EncryptedTransformer::rescaleIfNeeded(
+    seal::Ciphertext& cipher,
+    seal::Evaluator& evaluator,
+    seal::CKKSEncoder& encoder) {
+    
+    if (!aggressive_rescaling_) {
+        return; // Skip rescaling if not using aggressive strategy
+    }
+    
+    // Get the current context data
+    auto context_data = context_->get_context_data(cipher.parms_id());
+    if (!context_data) {
+        return; // Cannot rescale further
+    }
+    
+    // Check if we are at the last level
+    if (context_data->chain_index() == context_->first_context_data()->chain_index()) {
+        return; // At the first level, cannot rescale
+    }
+    
+    // Check the scale - if it's significantly larger than intended, rescale
+    if (cipher.scale() > scale_ * 1.2) {
+        evaluator.rescale_to_next_inplace(cipher);
+        cipher.scale() = scale_; // Reset to the intended scale
+    }
+}
+
+// Main forward pass
+seal::Ciphertext EncryptedTransformer::forward(
+    const seal::Ciphertext& input_embedding,
+    seal::CKKSEncoder& encoder,
+    seal::Encryptor& encryptor,
+    seal::Evaluator& evaluator,
+    seal::Ciphertext* attention_mask) {
+    
+    seal::Ciphertext current_output = input_embedding;
+    
+    // Process through multiple transformer layers
+    for (int layer = 0; layer < num_layers_; layer++) {
+        if (num_layers_ > 1) {
+            std::cout << "Processing layer " << layer + 1 << "/" << num_layers_ << std::endl;
+        }
+        
+        current_output = transformerLayer(
+            current_output, encoder, encryptor, evaluator, attention_mask);
+    }
+    
+    return current_output;
+}
+
+// Single transformer layer
+seal::Ciphertext EncryptedTransformer::transformerLayer(
+    const seal::Ciphertext& input,
+    seal::CKKSEncoder& encoder,
+    seal::Encryptor& encryptor,
+    seal::Evaluator& evaluator,
+    seal::Ciphertext* attention_mask) {
+    
+    // Simplify for minimal baseline - just pass through
+    if (hidden_size_ <= 8) {
+        return input;
+    }
+    
+    // Multi-head attention sublayer
+    seal::Ciphertext attention_output = multiHeadAttention(
+        input, encoder, encryptor, evaluator, attention_mask);
+    
+    // Add residual connection
+    evaluator.add_inplace(attention_output, input);
+    
+    // Rescale after addition if using aggressive rescaling
+    rescaleIfNeeded(attention_output, evaluator, encoder);
+    
+    // Feed-forward sublayer
+    seal::Ciphertext ff_output = feedForward(
+        attention_output, encoder, encryptor, evaluator);
+    
+    // Add residual connection
+    evaluator.add_inplace(ff_output, attention_output);
+    
+    // Final rescale if needed
+    rescaleIfNeeded(ff_output, evaluator, encoder);
+    
+    return ff_output;
+}
+
+// Multi-head attention
+seal::Ciphertext EncryptedTransformer::multiHeadAttention(
+    const seal::Ciphertext& input,
+    seal::CKKSEncoder& encoder,
+    seal::Encryptor& encryptor,
+    seal::Evaluator& evaluator,
+    seal::Ciphertext* attention_mask) {
+    
+    // For minimal implementation, use only query and output weights
+    seal::Ciphertext result;
+    
+    // Compute query projection
+    evaluator.multiply_plain(input, weights_->getQueryWeight(), result);
+    evaluator.relinearize_inplace(result, relin_keys_);
+    
+    // Rescale after multiplication
+    if (aggressive_rescaling_) {
+        evaluator.rescale_to_next_inplace(result);
+        result.scale() = scale_;
+    }
+    
+    // Compute output projection
+    evaluator.multiply_plain(result, weights_->getOutputWeight(), result);
+    evaluator.relinearize_inplace(result, relin_keys_);
+    
+    // Rescale after multiplication
+    if (aggressive_rescaling_) {
+        evaluator.rescale_to_next_inplace(result);
+        result.scale() = scale_;
+    }
+    
+    return result;
+}
+
+// Feed-forward network
+seal::Ciphertext EncryptedTransformer::feedForward(
+    const seal::Ciphertext& input,
+    seal::CKKSEncoder& encoder,
+    seal::Encryptor& encryptor,
+    seal::Evaluator& evaluator) {
+    
+    // For minimal implementation, use simple projection
+    seal::Ciphertext result;
+    
+    // First dense layer
+    evaluator.multiply_plain(input, weights_->getFeedForward1Weight(), result);
+    evaluator.relinearize_inplace(result, relin_keys_);
+    
+    // Rescale after multiplication
+    if (aggressive_rescaling_) {
+        evaluator.rescale_to_next_inplace(result);
+        result.scale() = scale_;
+    }
+    
+    // Apply simplified activation (skip activation for minimal implementation)
+    
+    // Second dense layer
+    evaluator.multiply_plain(result, weights_->getFeedForward2Weight(), result);
+    evaluator.relinearize_inplace(result, relin_keys_);
+    
+    // Rescale after multiplication
+    if (aggressive_rescaling_) {
+        evaluator.rescale_to_next_inplace(result);
+        result.scale() = scale_;
+    }
+    
+    return result;
 } 

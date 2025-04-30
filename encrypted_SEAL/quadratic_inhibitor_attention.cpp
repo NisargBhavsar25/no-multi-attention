@@ -80,7 +80,7 @@ seal::Ciphertext EncryptedQuadraticInhibitorAttention::computeQuadraticInhibitio
     const seal::Ciphertext* attention_mask) {
     
     // Step 1: Compute query-key squared difference (||Q_i - K_j||^2)
-    std::cout << "    Computing query-key distances..." << std::endl;
+    std::cout << "    Computing query-key distances with explicit rescaling..." << std::endl;
     
     // We compute the squared L2 norm: ||Q_i - K_j||^2
     // For each query position i and each key position j
@@ -88,20 +88,35 @@ seal::Ciphertext EncryptedQuadraticInhibitorAttention::computeQuadraticInhibitio
     // First, we need to compute Q^2
     seal::Ciphertext query_squared;
     evaluator.square(query, query_squared);
+    
+    // Explicit relinearization after squaring
     evaluator.relinearize_inplace(query_squared, relin_keys_);
+    
+    // Explicit rescaling after multiplication
     evaluator.rescale_to_next_inplace(query_squared);
+    std::cout << "      Rescaled after computing Q^2" << std::endl;
     
     // Then compute K^2
     seal::Ciphertext key_squared;
     evaluator.square(key, key_squared);
+    
+    // Explicit relinearization after squaring
     evaluator.relinearize_inplace(key_squared, relin_keys_);
+    
+    // Explicit rescaling after multiplication
     evaluator.rescale_to_next_inplace(key_squared);
+    std::cout << "      Rescaled after computing K^2" << std::endl;
     
     // Compute -2 * Q * K
     seal::Ciphertext query_key_product;
     evaluator.multiply(query, key, query_key_product);
+    
+    // Explicit relinearization after multiplication
     evaluator.relinearize_inplace(query_key_product, relin_keys_);
+    
+    // Explicit rescaling after multiplication
     evaluator.rescale_to_next_inplace(query_key_product);
+    std::cout << "      Rescaled after computing Q*K" << std::endl;
     
     // Encode -2 scalar
     seal::Plaintext minus_two_plain;
@@ -109,6 +124,28 @@ seal::Ciphertext EncryptedQuadraticInhibitorAttention::computeQuadraticInhibitio
     
     // Multiply by -2
     evaluator.multiply_plain_inplace(query_key_product, minus_two_plain);
+    
+    // Adjust scales if needed before addition
+    if (query_squared.scale() != key_squared.scale() || 
+        query_squared.scale() != query_key_product.scale()) {
+        std::cout << "      Adjusting scales for uniform addition" << std::endl;
+        
+        // Match key_squared scale to query_squared
+        if (key_squared.scale() != query_squared.scale()) {
+            double scale_factor = key_squared.scale() / query_squared.scale();
+            seal::Plaintext scale_plain;
+            encoder.encode(scale_factor, 1.0, scale_plain);
+            evaluator.multiply_plain_inplace(key_squared, scale_plain);
+        }
+        
+        // Match query_key_product scale to query_squared
+        if (query_key_product.scale() != query_squared.scale()) {
+            double scale_factor = query_key_product.scale() / query_squared.scale();
+            seal::Plaintext scale_plain;
+            encoder.encode(scale_factor, 1.0, scale_plain);
+            evaluator.multiply_plain_inplace(query_key_product, scale_plain);
+        }
+    }
     
     // Compute final squared distance: Q^2 + K^2 - 2*Q*K
     seal::Ciphertext distance_squared = query_squared;
@@ -135,6 +172,16 @@ seal::Ciphertext EncryptedQuadraticInhibitorAttention::computeQuadraticInhibitio
     // Step 4: Compute V_j - (scaled_distance + bias) for inhibition
     std::cout << "    Computing inhibitor function..." << std::endl;
     
+    // Make sure scales match before subtraction
+    if (value.scale() != distance_with_bias.scale()) {
+        std::cout << "      Adjusting scales before subtraction" << std::endl;
+        // Adjust the scale of distance_with_bias to match value
+        double scale_factor = distance_with_bias.scale() / value.scale();
+        seal::Plaintext scale_plain;
+        encoder.encode(scale_factor, 1.0, scale_plain);
+        evaluator.multiply_plain_inplace(distance_with_bias, scale_plain);
+    }
+    
     // Subtract the scaled distance + bias from value
     seal::Ciphertext inhibited_value = value;
     evaluator.negate_inplace(distance_with_bias);
@@ -147,9 +194,32 @@ seal::Ciphertext EncryptedQuadraticInhibitorAttention::computeQuadraticInhibitio
     // Apply attention mask if provided
     if (attention_mask != nullptr) {
         std::cout << "    Applying attention mask..." << std::endl;
-        evaluator.multiply(activated_value, *attention_mask, activated_value);
+        
+        // Make sure scales match before multiplication
+        if (activated_value.scale() != attention_mask->scale()) {
+            std::cout << "      Adjusting scales before applying mask" << std::endl;
+            // Create a plaintext scale adjustment
+            double scale_factor = activated_value.scale() / attention_mask->scale();
+            seal::Plaintext scale_plain;
+            encoder.encode(scale_factor, 1.0, scale_plain);
+            
+            // We need to adjust the scale of a ciphertext copy
+            seal::Ciphertext mask_copy = *attention_mask;
+            evaluator.multiply_plain_inplace(mask_copy, scale_plain);
+            
+            // Multiply with the adjusted mask
+            evaluator.multiply(activated_value, mask_copy, activated_value);
+        } else {
+            // Scales already match, multiply directly
+            evaluator.multiply(activated_value, *attention_mask, activated_value);
+        }
+        
+        // Explicit relinearization after multiplication
         evaluator.relinearize_inplace(activated_value, relin_keys_);
+        
+        // Explicit rescaling after multiplication
         evaluator.rescale_to_next_inplace(activated_value);
+        std::cout << "      Rescaled after applying mask" << std::endl;
     }
     
     // The result is our context layer (attention output)
@@ -172,33 +242,29 @@ seal::Ciphertext EncryptedQuadraticInhibitorAttention::computeApproximatedReLU(
     seal::Encryptor& encryptor,
     seal::Evaluator& evaluator) {
     
-    // We approximate ReLU with a polynomial
-    // A common approximation is: ReLU(x) ≈ 0.5*x + 0.5*x*tanh(x)
-    // For the tanh part, we'll use a Taylor approximation: tanh(x) ≈ x - x^3/3 + 2x^5/15
+    // We approximate ReLU with a quadratic polynomial for simplicity and efficiency
+    // A simple quadratic approximation: ReLU(x) ≈ 0.5*x + 0.25*x^2
     
     // Step 1: Compute x^2
     seal::Ciphertext x_squared;
     evaluator.square(input, x_squared);
+    
+    // Explicit relinearization after squaring
     evaluator.relinearize_inplace(x_squared, relin_keys_);
+    
+    // Explicit rescaling after multiplication as requested
     evaluator.rescale_to_next_inplace(x_squared);
     
-    // Step 2: Compute x^3
-    seal::Ciphertext x_cubed;
-    evaluator.multiply(input, x_squared, x_cubed);
-    evaluator.relinearize_inplace(x_cubed, relin_keys_);
-    evaluator.rescale_to_next_inplace(x_cubed);
+    // Encode coefficient 0.25 for x^2 term
+    seal::Plaintext coef_quarter_plain;
+    encoder.encode(0.25, x_squared.scale(), coef_quarter_plain);
     
-    // Encode the coefficient -1/3
-    seal::Plaintext coef_third_plain;
-    encoder.encode(-1.0/3.0, x_cubed.scale(), coef_third_plain);
+    // Multiply x^2 by 0.25
+    evaluator.multiply_plain_inplace(x_squared, coef_quarter_plain);
     
-    // Multiply x^3 by -1/3
-    evaluator.multiply_plain_inplace(x_cubed, coef_third_plain);
+    // No rescaling needed after plain multiplication
     
-    // Compute 0.5*x + 0.5*x*tanh(x) ≈ 0.5*x + 0.5*x*(x - x^3/3)
-    // = 0.5*x + 0.5*x^2 - 0.5*x^4/3
-    
-    // Encode 0.5
+    // Encode 0.5 for the linear term
     seal::Plaintext half_plain;
     encoder.encode(0.5, input.scale(), half_plain);
     
@@ -206,10 +272,22 @@ seal::Ciphertext EncryptedQuadraticInhibitorAttention::computeApproximatedReLU(
     seal::Ciphertext half_x = input;
     evaluator.multiply_plain_inplace(half_x, half_plain);
     
-    // Add 0.5*x + (x_cubed * -1/3) to get the final approximation
-    seal::Ciphertext result = half_x;
-    evaluator.add_inplace(result, x_cubed);
+    // No rescaling needed after plain multiplication
     
+    // Make scale of half_x match x_squared
+    // This is necessary before adding ciphertexts
+    if (half_x.scale() != x_squared.scale()) {
+        double scale_factor = half_x.scale() / x_squared.scale();
+        seal::Plaintext scale_plain;
+        encoder.encode(scale_factor, 1.0, scale_plain);
+        evaluator.multiply_plain_inplace(half_x, scale_plain);
+    }
+    
+    // Add 0.5*x + 0.25*x^2 to get the final approximation
+    seal::Ciphertext result = half_x;
+    evaluator.add_inplace(result, x_squared);
+    
+    std::cout << "  ReLU approximation with explicit rescaling applied" << std::endl;
     return result;
 }
 
@@ -227,8 +305,15 @@ seal::Ciphertext EncryptedQuadraticInhibitorAttention::matrixMultiply(
     
     // For now, we'll simply multiply the ciphertexts element-wise as an approximation
     seal::Ciphertext result;
+    
+    // Multiply the ciphertexts
     evaluator.multiply(A, B, result);
+    
+    // Perform relinearization to reduce the size of the ciphertext
     evaluator.relinearize_inplace(result, relin_keys_);
+    
+    // Explicit rescaling after multiplication as requested
+    // This reduces the noise growth and keeps the scale in check
     evaluator.rescale_to_next_inplace(result);
     
     return result;
