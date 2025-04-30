@@ -78,6 +78,20 @@ public:
         heongpu::HEEncoder<heongpu::Scheme::CKKS>& encoder,
         heongpu::HEEncryptor<heongpu::Scheme::CKKS>& encryptor);
     
+    // Matrix multiply function implementation
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> matrixMultiply(
+        const heongpu::Ciphertext<heongpu::Scheme::CKKS>& A,
+        const heongpu::Ciphertext<heongpu::Scheme::CKKS>& B,
+        int rows_A, int cols_A, int cols_B,
+        heongpu::HEEncoder<heongpu::Scheme::CKKS>& encoder,
+        heongpu::HEEncryptor<heongpu::Scheme::CKKS>& encryptor);
+    
+    // Approximated ReLU function implementation
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> computeApproximatedReLU(
+        const heongpu::Ciphertext<heongpu::Scheme::CKKS>& input,
+        heongpu::HEEncoder<heongpu::Scheme::CKKS>& encoder,
+        heongpu::HEEncryptor<heongpu::Scheme::CKKS>& encryptor);
+    
 private:
     // Compute query-key interactions with quadratic inhibition
     heongpu::Ciphertext<heongpu::Scheme::CKKS> computeQuadraticInhibition(
@@ -90,7 +104,8 @@ private:
         
     // Context and operators
     heongpu::HEContext<heongpu::Scheme::CKKS>& context_;
-    heongpu::HEOperator<heongpu::Scheme::CKKS> operators_;
+    heongpu::HEEncoder<heongpu::Scheme::CKKS> encoder_;
+    heongpu::HEArithmeticOperator<heongpu::Scheme::CKKS> operators_;
     heongpu::Relinkey<heongpu::Scheme::CKKS>& relin_key_;
     heongpu::Galoiskey<heongpu::Scheme::CKKS>& galois_key_;
     
@@ -161,7 +176,8 @@ private:
     heongpu::HEContext<heongpu::Scheme::CKKS>& context_;
     std::shared_ptr<EncryptedTransformerWeights> weights_;
     std::unique_ptr<EncryptedQuadraticInhibitorAttention> attention_;
-    heongpu::HEOperator<heongpu::Scheme::CKKS> operators_;
+    heongpu::HEEncoder<heongpu::Scheme::CKKS> encoder_;
+    heongpu::HEArithmeticOperator<heongpu::Scheme::CKKS> operators_;
     heongpu::Relinkey<heongpu::Scheme::CKKS>& relin_key_;
     heongpu::Galoiskey<heongpu::Scheme::CKKS>& galois_key_;
     

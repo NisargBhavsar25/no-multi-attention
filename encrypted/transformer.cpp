@@ -11,7 +11,8 @@ EncryptedTransformer::EncryptedTransformer(
     int num_attention_heads,
     double scale)
     : context_(context),
-      operators_(context),
+      encoder_(context),
+      operators_(context, encoder_),
       relin_key_(relin_key),
       galois_key_(galois_key),
       num_layers_(num_layers),
@@ -141,7 +142,9 @@ heongpu::Ciphertext<heongpu::Scheme::CKKS> EncryptedTransformer::layerNorm(
     
     // Scale the input by the factor
     heongpu::Ciphertext<heongpu::Scheme::CKKS> scaled_input(context_);
-    operators_.multiply(input, scale_cipher, scaled_input, options);
+    // Create a mutable copy of input
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> input_copy = input;
+    operators_.multiply(input_copy, scale_cipher, scaled_input, options);
     operators_.relinearize_inplace(scaled_input, relin_key_);
     
     // 2. Apply a polynomial stabilizer that approximately maintains
@@ -234,7 +237,10 @@ heongpu::Ciphertext<heongpu::Scheme::CKKS> EncryptedTransformer::reluApprox(
     
     // Square term: 0.625 * x²
     heongpu::Ciphertext<heongpu::Scheme::CKKS> squared(context_);
-    operators_.multiply(input, input, squared, options);
+    // Create mutable copies of input
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> input_copy1 = input;
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> input_copy2 = input;
+    operators_.multiply(input_copy1, input_copy1, squared, options);
     operators_.relinearize_inplace(squared, relin_key_);
     
     // Scale 0.625
@@ -258,7 +264,7 @@ heongpu::Ciphertext<heongpu::Scheme::CKKS> EncryptedTransformer::reluApprox(
     encryptor.encrypt(coef2_cipher, coef2_plain);
     
     heongpu::Ciphertext<heongpu::Scheme::CKKS> linear_term(context_);
-    operators_.multiply(input, coef2_cipher, linear_term, options);
+    operators_.multiply(input_copy2, coef2_cipher, linear_term, options);
     operators_.relinearize_inplace(linear_term, relin_key_);
     
     // Add terms: 0.625 * x² + 0.5 * x
@@ -328,11 +334,15 @@ heongpu::Ciphertext<heongpu::Scheme::CKKS> EncryptedTransformer::matrixMultiply(
                 
                 // Extract elements from A and B
                 heongpu::Ciphertext<heongpu::Scheme::CKKS> a_element(context_);
-                operators_.multiply(A, a_mask_cipher, a_element, options);
+                // Create a mutable copy of A
+                heongpu::Ciphertext<heongpu::Scheme::CKKS> A_copy = A;
+                operators_.multiply(A_copy, a_mask_cipher, a_element, options);
                 operators_.relinearize_inplace(a_element, relin_key_);
                 
                 heongpu::Ciphertext<heongpu::Scheme::CKKS> b_element(context_);
-                operators_.multiply(B, b_mask_cipher, b_element, options);
+                // Create a mutable copy of B
+                heongpu::Ciphertext<heongpu::Scheme::CKKS> B_copy = B;
+                operators_.multiply(B_copy, b_mask_cipher, b_element, options);
                 operators_.relinearize_inplace(b_element, relin_key_);
                 
                 // Multiply and add to dot product

@@ -11,7 +11,8 @@ EncryptedQuadraticInhibitorAttention::EncryptedQuadraticInhibitorAttention(
     int num_attention_heads,
     double scale)
     : context_(context),
-      operators_(context),
+      encoder_(context),
+      operators_(context, encoder_),
       relin_key_(relin_key),
       galois_key_(galois_key),
       hidden_size_(hidden_size),
@@ -94,11 +95,15 @@ heongpu::Ciphertext<heongpu::Scheme::CKKS> EncryptedQuadraticInhibitorAttention:
                 
                 // Extract elements from A and B
                 heongpu::Ciphertext<heongpu::Scheme::CKKS> a_element(context_);
-                operators_.multiply(A, a_mask_cipher, a_element, options);
+                // Create a mutable copy of A
+                heongpu::Ciphertext<heongpu::Scheme::CKKS> A_copy = A;
+                operators_.multiply(A_copy, a_mask_cipher, a_element, options);
                 operators_.relinearize_inplace(a_element, relin_key_);
                 
                 heongpu::Ciphertext<heongpu::Scheme::CKKS> b_element(context_);
-                operators_.multiply(B, b_mask_cipher, b_element, options);
+                // Create a mutable copy of B
+                heongpu::Ciphertext<heongpu::Scheme::CKKS> B_copy = B;
+                operators_.multiply(B_copy, b_mask_cipher, b_element, options);
                 operators_.relinearize_inplace(b_element, relin_key_);
                 
                 // Multiply and add to dot product
@@ -198,17 +203,17 @@ heongpu::Ciphertext<heongpu::Scheme::CKKS> EncryptedQuadraticInhibitorAttention:
         
         operators_.multiply(query_layer, mask_cipher, query_head, options);
         operators_.relinearize_inplace(query_head, relin_key_);
-        
+    
         operators_.multiply(key_layer, mask_cipher, key_head, options);
         operators_.relinearize_inplace(key_head, relin_key_);
-        
+    
         operators_.multiply(value_layer, mask_cipher, value_head, options);
         operators_.relinearize_inplace(value_head, relin_key_);
-        
+    
         // Apply quadratic inhibitor attention to this head
         heongpu::Ciphertext<heongpu::Scheme::CKKS> head_output = 
             computeQuadraticInhibition(query_head, key_head, value_head, encoder, encryptor, attention_mask);
-        
+    
         // Accumulate head output 
         heongpu::Ciphertext<heongpu::Scheme::CKKS> temp_output(context_);
         operators_.add(attention_output, head_output, temp_output, options);
@@ -258,7 +263,7 @@ heongpu::Ciphertext<heongpu::Scheme::CKKS> EncryptedQuadraticInhibitorAttention:
         int head_offset = 0; // We're assuming we're already working with head-specific data
         query_mask[head_offset + i] = 1.0;
         key_mask[head_offset + i] = 1.0;
-        
+    
         // Encode masks
         heongpu::Plaintext<heongpu::Scheme::CKKS> query_mask_plain(context_);
         encoder.encode(query_mask_plain, query_mask, scale_);
@@ -274,12 +279,16 @@ heongpu::Ciphertext<heongpu::Scheme::CKKS> EncryptedQuadraticInhibitorAttention:
         
         // Extract elements
         heongpu::Ciphertext<heongpu::Scheme::CKKS> query_element(context_);
-        operators_.multiply(query, query_mask_cipher, query_element, options);
-        operators_.relinearize_inplace(query_element, relin_key_);
+        // Create a mutable copy of the query and query_mask_cipher
+        heongpu::Ciphertext<heongpu::Scheme::CKKS> query_copy = query;
+        heongpu::Ciphertext<heongpu::Scheme::CKKS> query_mask_cipher_copy = query_mask_cipher;
+        operators_.multiply(query_copy, query_mask_cipher_copy, query_element, options);
         
         heongpu::Ciphertext<heongpu::Scheme::CKKS> key_element(context_);
-        operators_.multiply(key, key_mask_cipher, key_element, options);
-        operators_.relinearize_inplace(key_element, relin_key_);
+        // Create a mutable copy of the key and key_mask_cipher
+        heongpu::Ciphertext<heongpu::Scheme::CKKS> key_copy = key;
+        heongpu::Ciphertext<heongpu::Scheme::CKKS> key_mask_cipher_copy = key_mask_cipher;
+        operators_.multiply(key_copy, key_mask_cipher_copy, key_element, options);
         
         // Multiply elements and add to attention score
         heongpu::Ciphertext<heongpu::Scheme::CKKS> product(context_);
@@ -307,7 +316,9 @@ heongpu::Ciphertext<heongpu::Scheme::CKKS> EncryptedQuadraticInhibitorAttention:
     // Apply attention mask if provided
     if (attention_mask != nullptr) {
         heongpu::Ciphertext<heongpu::Scheme::CKKS> masked_score(context_);
-        operators_.add(scaled_attention_score, *attention_mask, masked_score, options);
+        // Create a mutable copy of the attention_mask
+        heongpu::Ciphertext<heongpu::Scheme::CKKS> attention_mask_copy = *attention_mask;
+        operators_.add(scaled_attention_score, attention_mask_copy, masked_score, options);
         scaled_attention_score = masked_score;
     }
     
@@ -338,9 +349,13 @@ heongpu::Ciphertext<heongpu::Scheme::CKKS> EncryptedQuadraticInhibitorAttention:
     operators_.multiply(relu_fourth, half_scale_cipher, half_relu_fourth, options);
     operators_.relinearize_inplace(half_relu_fourth, relin_key_);
     
-    // Compute ReLU^2 - 0.5*ReLU^4
+    // Modified subtract operation using negate and add
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> negated_half_relu_fourth(context_);
+    operators_.negate(half_relu_fourth, negated_half_relu_fourth, options);
+    
+    // Add missing declaration for quadratic_inhibition
     heongpu::Ciphertext<heongpu::Scheme::CKKS> quadratic_inhibition(context_);
-    operators_.subtract(relu_squared, half_relu_fourth, quadratic_inhibition, options);
+    operators_.add(relu_squared, negated_half_relu_fourth, quadratic_inhibition, options);
     
     // Apply attention weights to value
     // For simplicity, we broadcast the quadratic_inhibition value (which is a scalar)
@@ -361,7 +376,9 @@ heongpu::Ciphertext<heongpu::Scheme::CKKS> EncryptedQuadraticInhibitorAttention:
     
     // Multiply with value
     heongpu::Ciphertext<heongpu::Scheme::CKKS> context_layer(context_);
-    operators_.multiply(broadcasted_score, value, context_layer, options);
+    // Create a mutable copy of the value
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> value_copy = value;
+    operators_.multiply(broadcasted_score, value_copy, context_layer, options);
     operators_.relinearize_inplace(context_layer, relin_key_);
     
     return context_layer;
@@ -381,7 +398,9 @@ heongpu::Ciphertext<heongpu::Scheme::CKKS> EncryptedQuadraticInhibitorAttention:
     
     // First, compute x²
     heongpu::Ciphertext<heongpu::Scheme::CKKS> input_squared(context_);
-    operators_.multiply(input, input, input_squared, options);
+    // Create a mutable copy of input
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> input_copy1 = input;
+    operators_.multiply(input_copy1, input_copy1, input_squared, options);
     operators_.relinearize_inplace(input_squared, relin_key_);
     
     // Encode the coefficient 0.5
@@ -399,7 +418,9 @@ heongpu::Ciphertext<heongpu::Scheme::CKKS> EncryptedQuadraticInhibitorAttention:
     
     // Compute 0.5x
     heongpu::Ciphertext<heongpu::Scheme::CKKS> relu_term2(context_);
-    operators_.multiply(input, half_cipher, relu_term2, options);
+    // Create another mutable copy of input
+    heongpu::Ciphertext<heongpu::Scheme::CKKS> input_copy2 = input;
+    operators_.multiply(input_copy2, half_cipher, relu_term2, options);
     operators_.relinearize_inplace(relu_term2, relin_key_);
     
     // Combine terms to get 0.5x + 0.5x²

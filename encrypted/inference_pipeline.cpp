@@ -24,7 +24,7 @@ EncryptedInferencePipeline::EncryptedInferencePipeline(
     // For deep networks, we need a large number of levels
     // The actual number depends on the depth of computations in the network
     // For a typical transformer, at least 5 levels are needed
-    context_.set_coeff_modulus_default_values(5);
+    context_.set_coeff_modulus_values(5);
     
     // Generate context
     context_.generate();
@@ -78,7 +78,7 @@ EncryptedInferencePipeline::EncryptedInferencePipeline(
     std::cout << "Encrypted inference pipeline initialized in " << duration << " ms" << std::endl;
 }
 
-std::vector<double> EncryptedInferencePipeline::infer(const std::vector<double>& input) {
+std::vector<double> EncryptedInferencePipeline::infer(const std::vector<double>& input, const std::vector<bool>& attention_mask) {
     if (input.size() != hidden_size_) {
         throw std::runtime_error("Input size mismatch: expected " + std::to_string(hidden_size_) + 
                                  ", got " + std::to_string(input.size()));
