@@ -103,6 +103,46 @@ public:
         seal::Encryptor& encryptor,
         seal::Evaluator& evaluator);
     
+    // Strassen's matrix multiplication algorithm
+    seal::Ciphertext strassenMatrixMultiply(
+        const seal::Ciphertext& A,
+        const seal::Ciphertext& B,
+        int n, // Matrix dimension (assuming square matrices)
+        seal::CKKSEncoder& encoder,
+        seal::Encryptor& encryptor,
+        seal::Evaluator& evaluator);
+    
+    // Helper functions for Strassen's algorithm
+    seal::Ciphertext addCiphertext(
+        const seal::Ciphertext& A, 
+        const seal::Ciphertext& B,
+        seal::Evaluator& evaluator);
+    
+    seal::Ciphertext subtractCiphertext(
+        const seal::Ciphertext& A, 
+        const seal::Ciphertext& B,
+        seal::Evaluator& evaluator);
+    
+    // Extract submatrix from ciphertext
+    seal::Ciphertext extractSubmatrix(
+        const seal::Ciphertext& matrix,
+        int startRow, int startCol, int size,
+        int origSize,
+        seal::CKKSEncoder& encoder,
+        seal::Encryptor& encryptor,
+        seal::Evaluator& evaluator);
+    
+    // Combine submatrices into result matrix
+    seal::Ciphertext combineSubmatrices(
+        const seal::Ciphertext& C11, 
+        const seal::Ciphertext& C12,
+        const seal::Ciphertext& C21, 
+        const seal::Ciphertext& C22,
+        int size,
+        seal::CKKSEncoder& encoder,
+        seal::Encryptor& encryptor,
+        seal::Evaluator& evaluator);
+    
     // Approximated ReLU function implementation
     seal::Ciphertext computeApproximatedReLU(
         const seal::Ciphertext& input,

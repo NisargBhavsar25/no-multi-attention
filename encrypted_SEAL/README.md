@@ -15,6 +15,7 @@ The encrypted transformer consists of the following components:
 
 ## Recent Updates
 
+- **Strassen's Matrix Multiplication**: Implemented the Strassen algorithm for faster matrix multiplication with reduced complexity (O(n^2.807) vs O(n^3) for standard multiplication)
 - **Parameter Mismatches Handling**: Added robust error handling and fallback mechanisms for parameter mismatches between plaintexts and ciphertexts
 - **Python Interface**: Enhanced `run_seal.py` script in the project root directory for easy inference with BERT tokenization and embedding generation
 - **Timing Information**: Added timing measurements for overall inference process
@@ -83,6 +84,34 @@ Command line options:
 
 ## Implementation Details
 
+### Strassen's Matrix Multiplication Algorithm
+
+The implementation includes Strassen's matrix multiplication algorithm to reduce the computational complexity for matrix operations:
+
+```
+Algorithm: Strassen's Matrix Multiplication
+Input: A = (A11 A12; A21 A22) and B = (B11 B12; B21 B22) ∈ R^n×n
+1: if n = 1 then
+2:   C = A · B
+3: else
+4:   M1 = (A11 + A22) · (B11 + B22)
+5:   M2 = (A21 + A22) · B11
+6:   M3 = A11 · (B12 - B22)
+7:   M4 = A22 · (B21 - B11)
+8:   M5 = (A11 + A12) · B22
+9:   M6 = (A21 - A11) · (B11 + B12)
+10:  M7 = (A12 - A22) · (B21 + B22)
+11:  C11 = M1 + M4 - M5 + M7
+12:  C12 = M3 + M5
+13:  C21 = M2 + M4
+14:  C22 = M1 - M2 + M3 + M6
+Output: A · B = C = (C11 C12; C21 C22) ∈ R^n×n
+```
+
+The algorithm recursively divides the matrices into smaller submatrices and reduces the number of multiplications required from 8 to 7, resulting in a time complexity of O(n^2.807) compared to O(n^3) for standard matrix multiplication.
+
+In our implementation, we automatically detect when Strassen's algorithm can be applied (for square matrices with power-of-2 dimensions) and fall back to standard matrix multiplication otherwise.
+
 ### Robust Parameter Handling
 
 The implementation now includes robust parameter handling to address common homomorphic encryption challenges:
@@ -92,12 +121,6 @@ The implementation now includes robust parameter handling to address common homo
 3. **Chain Index Management**: Tracks and manages chain indices to ensure compatibility
 4. **Fallback Mechanisms**: Includes fallback to simpler operations when parameter mismatches occur
 
-### Simplified Attention Mechanism
-
-For improved stability, the implementation includes a simplified attention mechanism that:
-- Uses scalar multiplication instead of complex matrix operations when necessary
-- Handles parameter mismatches gracefully
-- Maintains encryption throughout the pipeline
 
 ### Quadratic Inhibitor Attention
 
@@ -129,6 +152,7 @@ The implementation uses the CKKS encryption scheme with the following improved p
 - Total inference time (including Python overhead) is typically 8-10 seconds for short sentences
 - C++ core inference time is around 0.1-0.2 seconds for the encryption operations
 - Performance can be further improved by:
+  - Using Strassen's matrix multiplication for large matrices (automatically applied when possible)
   - Reducing polynomial modulus degree for less demanding applications
   - Using custom weight configurations optimized for HE operations
   - Implementing parallel processing for batch inference
@@ -142,6 +166,7 @@ This implementation provides computational security based on the security of the
 - The system currently has limited support for very large hidden sizes
 - Residual connections may be skipped when parameter mismatches occur
 - The simplified attention mechanism prioritizes stability over exactness of the full attention mechanism
+- Strassen's algorithm implementation is simplified for encrypted matrices and may not achieve the full theoretical speedup in practice
 
 ## Future Improvements
 

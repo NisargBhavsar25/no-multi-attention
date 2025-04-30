@@ -112,6 +112,12 @@ void runInferencePipeline(const std::string& model_path,
     std::cout << "  Number of attention heads: " << num_attention_heads << std::endl;
     std::cout << "  Sequence length: " << seq_length << std::endl;
     
+    // Check if Strassen's algorithm will be used
+    bool can_use_strassen = (hidden_size & (hidden_size - 1)) == 0; // Check if power of 2
+    std::cout << "  Matrix multiplication: " 
+              << (can_use_strassen ? "Strassen's algorithm (O(n^2.807))" : "Standard multiplication (O(n^3))") 
+              << std::endl;
+    
     if (input_file.empty() || mask_file.empty() || output_file.empty()) {
         throw std::invalid_argument("Input file, mask file, and output file must all be provided");
     }

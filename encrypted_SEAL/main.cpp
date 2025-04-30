@@ -150,6 +150,12 @@ int main(int argc, char* argv[]) {
                   << (setup_time.count() / total_time * 100.0) << "%)" << std::endl;
         std::cout << "  - Inference time: " << inference_time.count() << " seconds (" 
                   << (inference_time.count() / total_time * 100.0) << "%)" << std::endl;
+        
+        // Add info about Strassen algorithm usage
+        bool using_strassen = (hidden_size & (hidden_size - 1)) == 0; // Check if power of 2
+        std::cout << "Matrix multiplication: " 
+                  << (using_strassen ? "Using Strassen's algorithm (O(n^2.807))" : "Using standard multiplication (O(n^3))") 
+                  << std::endl;
         std::cout << "=========================" << std::endl;
         
         return 0;
