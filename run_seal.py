@@ -452,6 +452,7 @@ def main():
             sys.exit(1)
         
         # Run inference
+        seal_time_start = time.time()
         print(f"DEBUG: Running SEAL inference")
         success = run_seal_inference(
             data_paths,
@@ -495,6 +496,10 @@ def main():
                 print(f"DEBUG: Failed to read output values")
         else:
             print(f"DEBUG: SEAL inference failed")
+        
+        seal_time_end = time.time()
+        seal_duration = seal_time_end - seal_time_start
+        print(f"\nSEAL inference time: {seal_duration:.2f} seconds")
         
         # Calculate and print overall timing
         overall_end_time = time.time()
